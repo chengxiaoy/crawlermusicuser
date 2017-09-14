@@ -1,7 +1,6 @@
 package org.chengy.core;
 
 
-import com.sun.tools.internal.ws.wsdl.document.http.HTTPConstants;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -18,7 +17,6 @@ import java.io.IOException;
 
 public class HttpHelper {
 
-
 	public static CloseableHttpClient client() {
 		return HttpClients.custom().
 				setConnectionManager(HTTPConnectionManager.getConnectionManager()).build();
@@ -31,9 +29,6 @@ public class HttpHelper {
 		get.addHeader(HttpConstants.USER_AGENT, HttpConstants.CHROME_V55);
 		get.addHeader(HttpConstants.REFERER, "https://music.163.com/");
 		get.addHeader(HttpConstants.HOST, "music.163.com");
-
-
-
 		CloseableHttpResponse response = null;
 		try {
 			response = client().execute(get);
