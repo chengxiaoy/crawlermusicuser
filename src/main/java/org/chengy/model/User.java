@@ -85,7 +85,7 @@ public class User extends BaseEntity {
 	}
 
 	@Override
-	public String toString(){
-		return username+"@"+community+" in "+area;
+	public String toString() {
+		return username + "@" + community + " in " + area + "：" + signature;
 	}
 }
