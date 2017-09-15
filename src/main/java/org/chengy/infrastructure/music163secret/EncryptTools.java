@@ -16,7 +16,7 @@ import java.util.Base64;
 public class EncryptTools {
 
     //AES加密
-    public static String encrypt(String text, String secKey) throws Exception {
+    private static String encrypt(String text, String secKey) throws Exception {
         byte[] raw = secKey.getBytes();
         SecretKeySpec skeySpec = new SecretKeySpec(raw, "AES");
         // "算法/模式/补码方式"
@@ -29,7 +29,7 @@ public class EncryptTools {
     }
 
     //字符填充
-    public static String zfill(String result, int n) {
+    private static String zfill(String result, int n) {
         if (result.length() >= n) {
             result = result.substring(result.length() - n, result.length());
         } else {
@@ -43,7 +43,7 @@ public class EncryptTools {
         return result;
     }
 
-    public Document commentAPI(String text, String url) throws Exception {
+    public static Document commentAPI(String text, String url) throws Exception {
         //私钥，随机16位字符串（自己可改）
         String secKey = "cd859f54539b24b7";
         String modulus = "00e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b725152b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ecbda92557c93870114af6c9d05c4f7f0c3685b7a46bee255932575cce10b424d813cfe4875d3e82047b97ddef52741d546b8e289dc6935b3ece0462db0a22b8e7";
@@ -70,17 +70,20 @@ public class EncryptTools {
         return document;
     }
 
-    public static String fansUrl = "http://music.163.com/weapi/user/getfolloweds?csrf_token=";
-    public static String loginUrl = "http://music.163.com/weapi/v1/resource/comments/R_SO_4_437859519/";
-    public static String songUrl = "http://music.163.com/weapi/song/enhance/player/url?csrf_token=";
+    public static String fansUrl = "https://music.163.com/weapi/user/getfolloweds?csrf_token=";
+    public static String loginUrl = "https://music.163.com/weapi/v1/resource/comments/R_SO_4_437859519/";
+    public static String songUrl = "https://music.163.com/weapi/song/enhance/player/url?csrf_token=";
     public static String songParams = "{\"ids\": \"[31384819]\", \"br\": 128000, \"csrf_token\": \"\"}";
-    public static String fansParams = "{\"userId\": \"330313\", \"offset\": \"0\", \"total\": \"true\", \"limit\": \"20\", \"csrf_token\": \"\"}";
+    String str="{uid: \"533856\", offset: \"0\", total: \"true\", limit: \"20\", csrf_token: \"\"}";
+    static String hehe="{userId: \"533856\", offset: \"0\", total: \"true\", limit: \"20\", csrf_token: \"\"}";
+    public static String fansParams = "{\"userId\": \"533856\", \"offset\": \"0\", \"total\": \"true\", \"limit\": \"20\", \"csrf_token\": \"\"}";
     public static String loginParams = "{\"usernassme\": \"\", \"rememberLogin\": \"true\", \"password\": \"\"}";
 
 
     public static void main(String[] args) throws Exception {
         EncryptTools encryptTools = new EncryptTools();
-        Document document = encryptTools.commentAPI(fansParams, fansUrl);
+        Document document = commentAPI(hehe, fansUrl);
+        System.out.println(document.text());
     }
 
 
