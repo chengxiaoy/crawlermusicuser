@@ -2,6 +2,8 @@ package org.chengy.infrastructure.music163secret;
 
 import org.chengy.model.User;
 
+import java.util.Date;
+
 /**
  * Created by nali on 2017/9/15.
  */
@@ -16,9 +18,10 @@ public class UserFactory {
 	 * @param gender
 	 * @return
 	 */
-	public static User buildUser(String area,String nickname,String avatar,String uid,String signature,int gender){
+	public static User buildUser(Date age, String area, String nickname, String avatar, String uid, String signature, int gender){
 
 		User user = new User();
+		user.setAge(age);
 		user.setArea(area);
 		user.setUsername(nickname);
 		user.setAvatar(avatar);

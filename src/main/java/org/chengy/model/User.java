@@ -1,22 +1,27 @@
 package org.chengy.model;
 
-import javax.persistence.Entity;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.util.Date;
+import java.util.List;
 
 /**
  * Created by nali on 2017/9/12.
  */
 
-@Entity
+@Document
 public class User extends BaseEntity {
 
 	private String username;
 	private String avatar;
 	private String signature;
-	private int age;
+	private Date age;
 	private int gender;
 	private String area;
 	private String communityId;
 	private String community;
+
+	private List<String> loveSongId;
 
 
 	public String getUsername() {
@@ -41,14 +46,6 @@ public class User extends BaseEntity {
 
 	public void setSignature(String signature) {
 		this.signature = signature;
-	}
-
-	public int getAge() {
-		return age;
-	}
-
-	public void setAge(int age) {
-		this.age = age;
 	}
 
 	public int getGender() {
@@ -87,5 +84,21 @@ public class User extends BaseEntity {
 	@Override
 	public String toString() {
 		return username + "@" + community + " in " + area + "：" + signature;
+	}
+
+	public List<String> getLoveSongId() {
+		return loveSongId;
+	}
+
+	public void setLoveSongId(List<String> loveSongId) {
+		this.loveSongId = loveSongId;
+	}
+
+	public Date getAge() {
+		return age;
+	}
+
+	public void setAge(Date age) {
+		this.age = age;
 	}
 }
