@@ -47,7 +47,7 @@ public class Crawler163music {
 				String id = ids.peek();
 
 				List<User> users =
-						userRepository.findByCommunityIdAndCommunity(id, "163music");
+						userRepository.findByCommunityIdAndCommunity(id, Music163ApiCons.communityName);
 				if (users.size() > 0) {
 					continue;
 				}
@@ -128,15 +128,19 @@ public class Crawler163music {
 
 
 	public List<String> getUserLikeSong(String uid) throws Exception {
+		List<String> songIds=new ArrayList<>();
+		try {
+			String songRecordParam = Music163ApiCons.getSongRecordALLParams(uid, 1, 10);
+			Document document = EncryptTools.commentAPI(songRecordParam, Music163ApiCons.songRecordUrl);
+			JsonNode root = objectMapper.readTree(document.text());
+			songIds =
+					root.findValue("allData").findValues("song").stream()
+							.limit(10).map(ob -> ob.get("id").asText()).collect(Collectors.toList());
 
-		String songRecordParam = Music163ApiCons.getSongRecordALLParams(uid, 1, 10);
-		Document document = EncryptTools.commentAPI(songRecordParam, Music163ApiCons.songRecordUrl);
-		JsonNode root = objectMapper.readTree(document.text());
-		List<String> songIds =
-				root.findValue("allData").findValues("song").stream()
-						.limit(10).map(ob -> ob.get("id").asText()).collect(Collectors.toList());
-
-		System.out.println(songIds);
+			System.out.println(songIds);
+		} catch (Exception e) {
+			System.out.println("get like song failed:"+uid);
+		}
 		return songIds;
 	}
 

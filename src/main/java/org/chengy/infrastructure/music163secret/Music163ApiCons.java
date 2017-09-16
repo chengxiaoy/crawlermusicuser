@@ -10,6 +10,8 @@ import com.sun.tools.corba.se.idl.StringGen;
 public class Music163ApiCons {
 
 
+	public static final String communityName="163music";
+
 	public static final String Music163UserHost = "https://music.163.com/user/home?id=";
 
 

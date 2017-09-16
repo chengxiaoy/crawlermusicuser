@@ -25,7 +25,7 @@ public class UserFactory {
 		user.setArea(area);
 		user.setUsername(nickname);
 		user.setAvatar(avatar);
-		user.setCommunity("163music");
+		user.setCommunity(Music163ApiCons.communityName);
 		user.setCommunityId(uid);
 		user.setSignature(signature);
 		user.setGender(gender);
