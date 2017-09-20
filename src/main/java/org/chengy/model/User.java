@@ -1,5 +1,7 @@
 package org.chengy.model;
 
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
@@ -10,6 +12,9 @@ import java.util.List;
  */
 
 @Document
+@CompoundIndexes({
+		@CompoundIndex(name = "userCommunity",def = "{'communityId':1,'community':1}")
+})
 public class User extends BaseEntity {
 
 	private String username;

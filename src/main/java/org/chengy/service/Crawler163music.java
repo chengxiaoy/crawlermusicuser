@@ -39,7 +39,7 @@ public class Crawler163music {
 	@Autowired
 	MongoTemplate mongoTemplate;
 
-	public void getUserInfo(String startId) throws Exception {
+	public void getUserInfo(String startId){
 		LinkedList<String> ids = new LinkedList<>();
 		ids.add(startId);
 		while (ids.size() > 0) {
