@@ -148,7 +148,7 @@ public class Crawler163music {
 	public static void main(String[] args) throws Exception {
 
 		Crawler163music crawler163music = new Crawler163music();
-		crawler163music.getUserInfo("13887683");
+		crawler163music.getUserInfo("49872368");
 	}
 
 
