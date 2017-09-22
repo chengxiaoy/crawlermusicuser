@@ -19,7 +19,8 @@ public class HttpHelper {
 
 	public static CloseableHttpClient client() {
 		return HttpClients.custom().
-				setConnectionManager(HTTPConnectionManager.getConnectionManager()).build();
+				setConnectionManager(HTTPConnectionManager.getConnectionManager()).setMaxConnPerRoute(200)
+				.setMaxConnPerRoute(200).build();
 
 	}
 

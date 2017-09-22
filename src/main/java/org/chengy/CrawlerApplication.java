@@ -26,44 +26,44 @@ public class CrawlerApplication implements CommandLineRunner {
 		Thread thread1 = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				crawler163music.getUserInfo("348794252");
+				crawler163music.getUserInfo("64469779");
 			}
 		});
 
 		Thread thread2 = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				crawler163music.getUserInfo("16809603");
+				crawler163music.getUserInfo("346947461");
 			}
 		});
 		Thread thread3 = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				crawler163music.getUserInfo("49872368");
+				crawler163music.getUserInfo("48582637");
 			}
 		});
 		Thread thread4 = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				crawler163music.getUserInfo("28411484");
+				crawler163music.getUserInfo("286670807");
 			}
 		});
 		Thread thread5 = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				crawler163music.getUserInfo("8688535");
+				crawler163music.getUserInfo("276439053");
 			}
 		});
 		Thread thread6 = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				crawler163music.getUserInfo("32469117");
+				crawler163music.getUserInfo("273699222");
 			}
 		});
 		Thread thread7 = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				crawler163music.getUserInfo("19703807");
+				crawler163music.getUserInfo("330928393");
 			}
 		});
 		thread1.start();
