@@ -10,4 +10,6 @@ import java.util.List;
  */
 public interface UserRepository extends MongoRepository<User,String> {
 	List<User> findByCommunityIdAndCommunity(String communityId,String community);
+
+	List<User> findByCommunityId(String communityId);
 }

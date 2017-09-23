@@ -8,6 +8,9 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.domain.Example;
+import org.springframework.data.domain.ExampleMatcher;
+
+import java.util.List;
 
 @SpringBootApplication
 public class CrawlerApplication implements CommandLineRunner {
@@ -26,6 +29,8 @@ public class CrawlerApplication implements CommandLineRunner {
 		Thread thread1 = new Thread(new Runnable() {
 			@Override
 			public void run() {
+				List<User> userList=userRepositor.findByCommunityId("64469779");
+				userRepositor.delete(userList);
 				crawler163music.getUserInfo("64469779");
 			}
 		});
@@ -33,36 +38,48 @@ public class CrawlerApplication implements CommandLineRunner {
 		Thread thread2 = new Thread(new Runnable() {
 			@Override
 			public void run() {
+				List<User> userList=userRepositor.findByCommunityId("346947461");
+				userRepositor.delete(userList);
 				crawler163music.getUserInfo("346947461");
 			}
 		});
 		Thread thread3 = new Thread(new Runnable() {
 			@Override
 			public void run() {
+				List<User> userList=userRepositor.findByCommunityId("48582637");
+				userRepositor.delete(userList);
 				crawler163music.getUserInfo("48582637");
 			}
 		});
 		Thread thread4 = new Thread(new Runnable() {
 			@Override
 			public void run() {
+				List<User> userList=userRepositor.findByCommunityId("286670807");
+				userRepositor.delete(userList);
 				crawler163music.getUserInfo("286670807");
 			}
 		});
 		Thread thread5 = new Thread(new Runnable() {
 			@Override
 			public void run() {
+				List<User> userList=userRepositor.findByCommunityId("276439053");
+				userRepositor.delete(userList);
 				crawler163music.getUserInfo("276439053");
 			}
 		});
 		Thread thread6 = new Thread(new Runnable() {
 			@Override
 			public void run() {
+				List<User> userList=userRepositor.findByCommunityId("273699222");
+				userRepositor.delete(userList);
 				crawler163music.getUserInfo("273699222");
 			}
 		});
 		Thread thread7 = new Thread(new Runnable() {
 			@Override
 			public void run() {
+				List<User> userList=userRepositor.findByCommunityId("330928393");
+				userRepositor.delete(userList);
 				crawler163music.getUserInfo("330928393");
 			}
 		});
