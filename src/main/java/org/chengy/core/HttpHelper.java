@@ -1,6 +1,7 @@
 package org.chengy.core;
 
 
+import org.apache.http.HttpHost;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -18,7 +19,7 @@ import java.io.IOException;
 public class HttpHelper {
 
 	public static CloseableHttpClient client() {
-		return HttpClients.custom().
+		return HttpClients.custom().setProxy(new HttpHost("180.173.66.129",9797)).
 				setConnectionManager(HTTPConnectionManager.getConnectionManager()).setMaxConnPerRoute(200)
 				.setMaxConnPerRoute(200).build();
 

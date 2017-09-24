@@ -39,13 +39,18 @@ public class Crawler163music {
 	@Autowired
 	MongoTemplate mongoTemplate;
 
-	public void getUserInfo(String startId){
+	public void getUserInfo(String startId) {
 		LinkedList<String> ids = new LinkedList<>();
 		ids.add(startId);
 		while (ids.size() > 0) {
 			try {
 				String id = ids.peek();
-
+				if (ids.size()<1000){
+					List<String> fansIds = getFansId(id);
+					List<String> followedIds = getFollowedId(id);
+					ids.addAll(fansIds);
+					ids.addAll(followedIds);
+				}
 				List<User> users =
 						userRepository.findByCommunityIdAndCommunity(id, Music163ApiCons.communityName);
 				if (users.size() > 0) {
@@ -89,10 +94,7 @@ public class Crawler163music {
 
 				userRepository.save(user);
 				System.out.println("save user succeed:" + user.getCommunityId());
-				List<String> fansIds = getFansId(id);
-				List<String> followedIds = getFollowedId(id);
-				ids.addAll(fansIds);
-				ids.addAll(followedIds);
+
 			} catch (Exception e) {
 				System.out.println(ids.get(0) + " get info failed");
 				e.printStackTrace();
@@ -105,13 +107,15 @@ public class Crawler163music {
 
 	public List<String> getFansId(String uid) throws Exception {
 
-		String fansParam = Music163ApiCons.getFansParams(uid, 1, 30);
+		String fansParam = Music163ApiCons.getFansParams(uid, 1, 100);
 		Document document = EncryptTools.commentAPI(fansParam, Music163ApiCons.fansUrl);
 		JsonNode root = objectMapper.readTree(document.text());
 		List<JsonNode> jsonNodeList =
 				root.findValue("followeds").findValues("userId");
+
 		List<String> ids =
 				jsonNodeList.stream().map(JsonNode::asText).collect(Collectors.toList());
+
 		return ids;
 	}
 
@@ -128,7 +132,7 @@ public class Crawler163music {
 
 
 	public List<String> getUserLikeSong(String uid) throws Exception {
-		List<String> songIds=new ArrayList<>();
+		List<String> songIds = new ArrayList<>();
 		try {
 			String songRecordParam = Music163ApiCons.getSongRecordALLParams(uid, 1, 10);
 			Document document = EncryptTools.commentAPI(songRecordParam, Music163ApiCons.songRecordUrl);
@@ -139,7 +143,7 @@ public class Crawler163music {
 
 			System.out.println(songIds);
 		} catch (Exception e) {
-			System.out.println("get like song failed:"+uid);
+			System.out.println("get like song failed:" + uid);
 		}
 		return songIds;
 	}
