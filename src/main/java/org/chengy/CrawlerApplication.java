@@ -1,5 +1,6 @@
 package org.chengy;
 
+import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
 import org.chengy.model.User;
 import org.chengy.repository.UserRepository;
 import org.chengy.service.Crawler163music;
@@ -34,9 +35,11 @@ public class CrawlerApplication implements CommandLineRunner {
 	public void run(String... var1) throws Exception {
 		Random random = new Random();
 		int rand=random.nextInt(200);
-		int threadNums=9;
+		System.out.println(rand);
+		int threadNums=13;
 		Pageable pageable = new PageRequest(rand, threadNums);
 		List<String> listStr= userRepositor.findAll(pageable).getContent().stream().map(ob->ob.getCommunityId()).collect(Collectors.toList());
+		System.out.println(listStr);
 		Iterator strItr = listStr.iterator();
 		for (int i = 0; i < threadNums; i++) {
 			Thread thread = new Thread(new Runnable() {

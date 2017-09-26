@@ -45,7 +45,7 @@ public class Crawler163music {
 		while (ids.size() > 0) {
 			try {
 				String id = ids.peek();
-				if (ids.size()<1000){
+				if (ids.size() < 1000) {
 					List<String> fansIds = getFansId(id);
 					List<String> followedIds = getFollowedId(id);
 					ids.addAll(fansIds);
@@ -146,6 +146,14 @@ public class Crawler163music {
 			System.out.println("get like song failed:" + uid);
 		}
 		return songIds;
+	}
+
+
+	public void getSongInfo(String songId) throws Exception {
+
+		String html =
+				HttpHelper.get(Music163ApiCons.songUrl);
+
 	}
 
 
