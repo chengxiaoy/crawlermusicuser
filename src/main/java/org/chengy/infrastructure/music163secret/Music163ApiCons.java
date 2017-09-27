@@ -3,21 +3,43 @@ package org.chengy.infrastructure.music163secret;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.awt.print.Printable;
+
 /**
  * Created by nali on 2017/9/15.
  */
 public class Music163ApiCons {
 
 
-	public static final String communityName="163music";
+	public static final String communityName = "163music";
 
 	public static final String Music163UserHost = "https://music.163.com/user/home?id=";
 
 
 	public static final String fansUrl = "https://music.163.com/weapi/user/getfolloweds?csrf_token=";
+	/**
+	 * 播放链接
+	 */
 	public static final String songUrl = "https://music.163.com/weapi/song/enhance/player/url?csrf_token=";
-
+	/**
+	 * 用户播放歌曲的记录
+	 */
 	public static final String songRecordUrl = "https://music.163.com/weapi/v1/play/record?csrf_token=";
+	/**
+	 * 获取歌词的链接
+	 */
+	public static final String lyric = "https://music.163.com/weapi/song/lyric?csrf_token=";
+	/**
+	 * 歌曲的播放主页
+	 */
+	public static final String songHostUrl = "https://music.163.com/song?id=";
+	/**
+	 * 歌曲歌词
+	 */
+	public static final String lyricUrl = "https://music.163.com/weapi/song/lyric?csrf_token=";
+
+
+
 
 	public static String getFansParams(String uid, int pageIndex, int pageSize) throws JsonProcessingException {
 		ObjectMapper objectMapper = new ObjectMapper();
@@ -48,6 +70,60 @@ public class Music163ApiCons {
 
 	}
 
+	public static String getLyricParams(String songId) throws JsonProcessingException {
+		ObjectMapper objectMapper = new ObjectMapper();
+		return objectMapper.writeValueAsString(new Music163ApiCons().new LyricParam(songId));
+
+	}
+
+	/**
+	 * 请求歌词的参数内部类
+	 */
+	class LyricParam{
+		private String id;
+		private Integer lv;
+		private Integer tv;
+		private String csrf_token;
+
+		public LyricParam(String songId){
+			this.id=songId;
+			lv=-1;
+			tv=-1;
+			csrf_token="";
+		}
+
+		public String getId() {
+			return id;
+		}
+
+		public void setId(String id) {
+			this.id = id;
+		}
+
+		public Integer getLv() {
+			return lv;
+		}
+
+		public void setLv(Integer lv) {
+			this.lv = lv;
+		}
+
+		public Integer getTv() {
+			return tv;
+		}
+
+		public void setTv(Integer tv) {
+			this.tv = tv;
+		}
+
+		public String getCsrf_token() {
+			return csrf_token;
+		}
+
+		public void setCsrf_token(String csrf_token) {
+			this.csrf_token = csrf_token;
+		}
+	}
 
 	/**
 	 * 请求关注人的参数内部类

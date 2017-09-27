@@ -6,9 +6,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.chengy.core.HttpHelper;
 import org.chengy.infrastructure.music163secret.EncryptTools;
 import org.chengy.infrastructure.music163secret.Music163ApiCons;
+import org.chengy.infrastructure.music163secret.SongFactory;
 import org.chengy.infrastructure.music163secret.UserFactory;
 import org.chengy.model.Song;
 import org.chengy.model.User;
+import org.chengy.repository.SongRepository;
 import org.chengy.repository.UserRepository;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -21,10 +23,9 @@ import org.springframework.stereotype.Service;
 import us.codecraft.xsoup.Xsoup;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -34,6 +35,9 @@ import java.util.stream.Collectors;
 public class Crawler163music {
 	@Autowired
 	private UserRepository userRepository;
+	@Autowired
+	private SongRepository songRepository;
+
 	@Autowired
 	private ObjectMapper objectMapper;
 	@Autowired
@@ -150,17 +154,60 @@ public class Crawler163music {
 
 
 	public void getSongInfo(String songId) throws Exception {
-
 		String html =
-				HttpHelper.get(Music163ApiCons.songUrl);
+				HttpHelper.get(Music163ApiCons.songHostUrl + songId);
+		Document document = Jsoup.parse(html);
 
+		Elements titleEle = document.select("body > div.g-bd4.f-cb > div.g-mn4 > div > div > div.m-lycifo > div.f-cb > div.cnt > div.hd > div > em");
+		String title = titleEle.get(0).html();
+		Elements artsELes = document.select("body > div.g-bd4.f-cb > div.g-mn4 > div > div > div.m-lycifo > div.f-cb > div.cnt > p:nth-child(2)");
+		String art = artsELes.text().split("：")[1].trim();
+
+		Elements albumEle = document.select("body > div.g-bd4.f-cb > div.g-mn4 > div > div > div.m-lycifo > div.f-cb > div.cnt > p:nth-child(3) > a");
+		String albumTitle = albumEle.get(0).html();
+		String albumId = albumEle.get(0).attr("href").split("id=")[1];
+
+
+		String lyric = getLyric(songId);
+		ObjectMapper objectMapper = new ObjectMapper();
+		JsonNode root = objectMapper.readTree(lyric);
+		lyric = root.findValue("lrc").findValue("lyric").asText();
+		String composer = "";
+		String pattern = "作曲 : .*?\n";
+		Pattern r = Pattern.compile(pattern);
+		Matcher matcher = r.matcher(lyric);
+		while (matcher.find()) {
+			composer = matcher.group().split(":")[1].trim();
+		}
+
+		String lyricist = "";
+		pattern = "作词 : .*?\n";
+		r = Pattern.compile(pattern);
+		matcher = r.matcher(lyric);
+		while (matcher.find()) {
+			lyricist = matcher.group().split(":")[1].trim();
+		}
+		List<String> arts = new ArrayList<>();
+		Arrays.asList(art.split("/")).forEach(ob -> arts.add(ob.trim()));
+		Song song = SongFactory.buildSong(songId, lyric, arts, albumTitle, albumId, title, composer, lyricist);
+		System.out.println(song);
+		songRepository.save(song);
+	}
+
+	public String getLyric(String songId) throws Exception {
+		String params = Music163ApiCons.getLyricParams(songId);
+		System.out.println(params);
+		String lyricUrl = Music163ApiCons.lyricUrl;
+		Document document = EncryptTools.commentAPI(params, lyricUrl);
+		return document.text();
 	}
 
 
 	public static void main(String[] args) throws Exception {
 
 		Crawler163music crawler163music = new Crawler163music();
-		crawler163music.getUserInfo("49872368");
+		crawler163music.getSongInfo("28854182");
+		System.out.println(crawler163music.getLyric("28854182"));
 	}
 
 

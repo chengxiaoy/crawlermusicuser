@@ -1,5 +1,7 @@
 package org.chengy.model;
 
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
@@ -7,20 +9,30 @@ import java.util.List;
 /**
  * Created by nali on 2017/9/13.
  */
-
+@Document
+@CompoundIndexes({
+		@CompoundIndex(name = "songCommunity", def = "{'communityId':1,'community':1}")
+})
 public class Song extends BaseEntity {
 
 	private String title;
 	private String albumTitle;
+	private String albumId;
 	private List<String> arts;
 	private List<String> tags;
 	private String category;
 	private String language;
 
-
-	private String community;
+	private String composer;
+	private String lyricist;
+	private String lyric;
 	private String communityId;
+	private String community;
 
+
+	public String toString() {
+		return "arts: " + arts + " title: " + title;
+	}
 
 	public String getTitle() {
 		return title;
@@ -84,5 +96,37 @@ public class Song extends BaseEntity {
 
 	public void setCommunityId(String communityId) {
 		this.communityId = communityId;
+	}
+
+	public String getAlbumId() {
+		return albumId;
+	}
+
+	public void setAlbumId(String albumId) {
+		this.albumId = albumId;
+	}
+
+	public String getComposer() {
+		return composer;
+	}
+
+	public void setComposer(String composer) {
+		this.composer = composer;
+	}
+
+	public String getLyric() {
+		return lyric;
+	}
+
+	public void setLyric(String lyric) {
+		this.lyric = lyric;
+	}
+
+	public String getLyricist() {
+		return lyricist;
+	}
+
+	public void setLyricist(String lyricist) {
+		this.lyricist = lyricist;
 	}
 }
