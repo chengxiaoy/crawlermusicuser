@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import us.codecraft.xsoup.Xsoup;
 
 import java.io.IOException;
@@ -154,6 +155,11 @@ public class Crawler163music {
 
 
 	public void getSongInfo(String songId) throws Exception {
+
+		List<Song> songs = songRepository.findSongByCommunityIdAndCommunity(songId, Music163ApiCons.communityName);
+		if (!CollectionUtils.isEmpty(songs)) {
+			return;
+		}
 		String html =
 				HttpHelper.get(Music163ApiCons.songHostUrl + songId);
 		Document document = Jsoup.parse(html);
