@@ -1,6 +1,5 @@
-package org.chengy.service;
+package org.chengy.service.crawler;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.chengy.core.HttpHelper;
@@ -14,16 +13,12 @@ import org.chengy.repository.SongRepository;
 import org.chengy.repository.UserRepository;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Example;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
-import us.codecraft.xsoup.Xsoup;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -173,31 +168,44 @@ public class Crawler163music {
 		String albumTitle = albumEle.get(0).html();
 		String albumId = albumEle.get(0).attr("href").split("id=")[1];
 
+		List<String> arts = new ArrayList<>();
+		Arrays.asList(art.split("/")).forEach(ob -> arts.add(ob.trim()));
 
 		String lyric = getLyric(songId);
 		ObjectMapper objectMapper = new ObjectMapper();
+
 		JsonNode root = objectMapper.readTree(lyric);
-		lyric = root.findValue("lrc").findValue("lyric").asText();
-		String composer = "";
-		String pattern = "作曲 : .*?\n";
-		Pattern r = Pattern.compile(pattern);
-		Matcher matcher = r.matcher(lyric);
-		while (matcher.find()) {
-			composer = matcher.group().split(":")[1].trim();
+		try {
+			try {
+				lyric = root.findValue("lrc").findValue("lyric").asText();
+			} catch (Exception e) {
+				lyric = root.findValue("tlyric").findValue("lyric").asText();
+			}
+			String composer = "";
+			String pattern = "作曲 : .*?\n";
+			Pattern r = Pattern.compile(pattern);
+			Matcher matcher = r.matcher(lyric);
+			while (matcher.find()) {
+				composer = matcher.group().split(":")[1].trim();
+			}
+
+			String lyricist = "";
+			pattern = "作词 : .*?\n";
+			r = Pattern.compile(pattern);
+			matcher = r.matcher(lyric);
+			while (matcher.find()) {
+				lyricist = matcher.group().split(":")[1].trim();
+			}
+
+			Song song = SongFactory.buildSong(songId, lyric, arts, albumTitle, albumId, title, composer, lyricist);
+			System.out.println(song);
+			songRepository.save(song);
+		} catch (Exception e) {
+			Song song = SongFactory.buildSong(songId, "", arts, albumTitle, albumId, title, "", "");
+			System.out.println(song);
+			songRepository.save(song);
 		}
 
-		String lyricist = "";
-		pattern = "作词 : .*?\n";
-		r = Pattern.compile(pattern);
-		matcher = r.matcher(lyric);
-		while (matcher.find()) {
-			lyricist = matcher.group().split(":")[1].trim();
-		}
-		List<String> arts = new ArrayList<>();
-		Arrays.asList(art.split("/")).forEach(ob -> arts.add(ob.trim()));
-		Song song = SongFactory.buildSong(songId, lyric, arts, albumTitle, albumId, title, composer, lyricist);
-		System.out.println(song);
-		songRepository.save(song);
 	}
 
 	public String getLyric(String songId) throws Exception {
