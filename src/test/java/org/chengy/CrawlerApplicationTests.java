@@ -51,10 +51,15 @@ public class CrawlerApplicationTests {
 	}
 
 	@Test
-	public void getAnalyerData() throws IOException {
+	public void getPopSong() throws IOException {
 
 		music163Statistics.getMostPopSong("popsong.txt");
 	}
 
+	@Test
+	public void getRelativedUser() throws IOException {
+
+		music163Statistics.relativedUser("330313");
+	}
 
 }

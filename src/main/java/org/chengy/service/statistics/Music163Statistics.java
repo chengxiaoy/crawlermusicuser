@@ -73,7 +73,7 @@ public class Music163Statistics {
 			Song song =
 					songRepository.findSongByCommunityIdAndCommunity(sorted.get(i).getKey(), Music163ApiCons.communityName);
 
-			if (song!=null) {
+			if (song != null) {
 				fileWriter.write(song.getTitle());
 				fileWriter.write("\t");
 				fileWriter.write(song.getArts().get(0));
@@ -94,19 +94,48 @@ public class Music163Statistics {
 	}
 
 
+	public void relativedUser(String userId) throws IOException {
 
-	public void recommendSong(String userId){
-		User user=userRepository.findByCommunityIdAndCommunity(userId,Music163ApiCons.communityName);
-		List<String> songList=user.getLoveSongId();
-
-		Random random=new Random();
-		int pageIndex=random.nextInt(200);
-		int pageSize=1000;
-		List<User> userList=userRepository.findAll(new PageRequest(pageIndex,pageSize)).getContent();
+		String filename = "datafile/sameUserfor" + ".txt";
+		File file = new File(filename);
+		file.createNewFile();
 
 
+		User user = userRepository.findByCommunityIdAndCommunity(userId, Music163ApiCons.communityName);
+		List<String> songList = user.getLoveSongId();
 
 
+		Random random = new Random();
+		int pageIndex = random.nextInt(200);
+		System.out.println("==========="+pageIndex);
+		int pageSize = 1000;
+		List<User> userList = userRepository.findAll(new PageRequest(pageIndex, pageSize)).getContent();
+		Map<String, Integer> map = new HashMap<>();
+		for (User other : userList) {
+			map.put(other.getCommunityId(), getIntersectionNum(songList, other.getLoveSongId()));
+		}
+
+		List<Map.Entry<String, Integer>> entries =
+				map.entrySet().stream().sorted((ob1, ob2) -> -(ob1.getValue() - ob2.getValue())).collect(Collectors.toList());
+
+		try (FileWriter fileWriter = new FileWriter(file)) {
+			for (Map.Entry<String, Integer> entry : entries) {
+				fileWriter.write(entry.getKey());
+				fileWriter.write("\t");
+				fileWriter.write(entry.getValue().toString());
+				fileWriter.write("\n");
+			}
+		}
+	}
+
+	int getIntersectionNum(List<String> idList1, List<String> idList2) {
+		int i = 0;
+		for (String id : idList2) {
+			if (idList1.contains(id)) {
+				i++;
+			}
+		}
+		return i;
 	}
 
 
