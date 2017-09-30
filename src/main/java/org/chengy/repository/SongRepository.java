@@ -10,5 +10,5 @@ import java.util.List;
  */
 public interface SongRepository extends MongoRepository<Song, String> {
 
-	List<Song> findSongByCommunityIdAndCommunity(String songId, String community);
+	Song findSongByCommunityIdAndCommunity(String songId, String community);
 }

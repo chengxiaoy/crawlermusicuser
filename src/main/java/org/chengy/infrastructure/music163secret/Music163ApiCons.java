@@ -25,10 +25,7 @@ public class Music163ApiCons {
 	 * 用户播放歌曲的记录
 	 */
 	public static final String songRecordUrl = "https://music.163.com/weapi/v1/play/record?csrf_token=";
-	/**
-	 * 获取歌词的链接
-	 */
-	public static final String lyric = "https://music.163.com/weapi/song/lyric?csrf_token=";
+
 	/**
 	 * 歌曲的播放主页
 	 */

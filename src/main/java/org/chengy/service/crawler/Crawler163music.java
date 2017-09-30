@@ -151,8 +151,8 @@ public class Crawler163music {
 
 	public void getSongInfo(String songId) throws Exception {
 
-		List<Song> songs = songRepository.findSongByCommunityIdAndCommunity(songId, Music163ApiCons.communityName);
-		if (!CollectionUtils.isEmpty(songs)) {
+		Song exitSong = songRepository.findSongByCommunityIdAndCommunity(songId, Music163ApiCons.communityName);
+		if (exitSong != null) {
 			return;
 		}
 		String html =

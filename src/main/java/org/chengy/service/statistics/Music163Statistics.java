@@ -12,6 +12,9 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import sun.jvm.hotspot.runtime.VM;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -37,12 +40,18 @@ public class Music163Statistics {
 	/**
 	 * 查询被喜欢次数最多的歌曲的歌曲
 	 */
-	public void getMostPopSong() {
+	public void getMostPopSong(String filename) throws IOException {
+
+		File file = new File(filename);
+		if (!file.exists()) {
+			file.createNewFile();
+		}
+
 
 		ConcurrentHashMap<String, Integer> concurrentHashMap = new ConcurrentHashMap<>();
 
 		int pageIndex = 1;
-		int pageSize = 100;
+		int pageSize = 1000;
 		List<User> userList = userRepository.findAll(new PageRequest(pageIndex, pageSize)).getContent();
 		while (userList.size() > 0) {
 			for (User user : userList) {
@@ -59,18 +68,29 @@ public class Music163Statistics {
 		}
 
 		List<Map.Entry<String, Integer>> sorted =
-				concurrentHashMap.entrySet().stream().sorted((ob1,ob2)->-(ob1.getValue()-ob2.getValue())).collect(Collectors.toList());
+				concurrentHashMap.entrySet().stream().sorted((ob1, ob2) -> -(ob1.getValue() - ob2.getValue())).collect(Collectors.toList());
+		FileWriter fileWriter = new FileWriter(file);
 
 		for (int i = 0; i < 100; i++) {
-			List<Song> songList =
+			Song song =
 					songRepository.findSongByCommunityIdAndCommunity(sorted.get(i).getKey(), Music163ApiCons.communityName);
-			if (songList.size() > 0) {
-				System.out.println(songList.get(0).getTitle() + "========" + sorted.get(i).getValue());
+
+			if (song!=null) {
+				fileWriter.write(song.getTitle());
+				fileWriter.write("\t");
+				fileWriter.write(song.getArts().get(0));
+				fileWriter.write("\t");
+				fileWriter.write(sorted.get(i).getValue().toString());
+				fileWriter.write("\n");
 			} else {
-				System.out.println(sorted.get(i).getKey() + "=========" + sorted.get(i).getValue());
+				fileWriter.write(sorted.get(i).getKey());
+				fileWriter.write("\t");
+				fileWriter.write(sorted.get(i).getValue().toString());
+				fileWriter.write("\n");
 			}
 
 		}
+		fileWriter.close();
 
 
 	}

@@ -1,5 +1,8 @@
 package org.chengy;
 
+import org.chengy.infrastructure.music163secret.Music163ApiCons;
+import org.chengy.model.Song;
+import org.chengy.repository.SongRepository;
 import org.chengy.service.crawler.Crawler163music;
 import org.chengy.service.statistics.Music163Statistics;
 import org.junit.Test;
@@ -8,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.io.IOException;
 import java.util.List;
 
 @RunWith(SpringRunner.class)
@@ -18,6 +22,9 @@ public class CrawlerApplicationTests {
 
 	@Autowired
 	Music163Statistics music163Statistics;
+
+	@Autowired
+	SongRepository songRepository;
 
 
 	@Test
@@ -36,8 +43,17 @@ public class CrawlerApplicationTests {
 	@Test
 	public void test() {
 
-		music163Statistics.getMostPopSong();
+		Song exitSong = songRepository.findSongByCommunityIdAndCommunity("exits", Music163ApiCons.communityName);
 
+		if (exitSong == null) {
+			System.out.println("=================not exit============ ");
+		}
+	}
+
+	@Test
+	public void getAnalyerData() throws IOException {
+
+		music163Statistics.getMostPopSong("popsong.txt");
 	}
 
 
