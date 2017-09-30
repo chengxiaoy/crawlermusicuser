@@ -6,6 +6,7 @@ import org.chengy.model.User;
 import org.chengy.repository.SongRepository;
 import org.chengy.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -15,10 +16,7 @@ import sun.jvm.hotspot.runtime.VM;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -91,6 +89,22 @@ public class Music163Statistics {
 
 		}
 		fileWriter.close();
+
+
+	}
+
+
+
+	public void recommendSong(String userId){
+		User user=userRepository.findByCommunityIdAndCommunity(userId,Music163ApiCons.communityName);
+		List<String> songList=user.getLoveSongId();
+
+		Random random=new Random();
+		int pageIndex=random.nextInt(200);
+		int pageSize=1000;
+		List<User> userList=userRepository.findAll(new PageRequest(pageIndex,pageSize)).getContent();
+
+
 
 
 	}

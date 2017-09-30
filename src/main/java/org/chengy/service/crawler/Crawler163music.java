@@ -51,9 +51,9 @@ public class Crawler163music {
 					ids.addAll(fansIds);
 					ids.addAll(followedIds);
 				}
-				List<User> users =
+				User exituser =
 						userRepository.findByCommunityIdAndCommunity(id, Music163ApiCons.communityName);
-				if (users.size() > 0) {
+				if (exituser!=null) {
 					continue;
 				}
 

@@ -9,7 +9,7 @@ import java.util.List;
  * Created by nali on 2017/9/15.
  */
 public interface UserRepository extends MongoRepository<User,String> {
-	List<User> findByCommunityIdAndCommunity(String communityId,String community);
+	User findByCommunityIdAndCommunity(String communityId,String community);
 
 	List<User> findByCommunityId(String communityId);
 }
