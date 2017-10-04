@@ -83,5 +83,34 @@ public class CrawlerLauncher {
 		}
 	}
 
+	/**
+	 * 取用户十条最爱的歌曲信息不够 扩大为100条
+	 */
+	public void fixMuser163User() {
+		while (true) {
+			int pageSize = 100;
+			Pageable pageable = new PageRequest(0, pageSize);
+			List<User> userList = userRepository.findAll(pageable).getContent();
+
+			for (User user : userList) {
+				Runnable runnable = new Runnable() {
+					@Override
+					public void run() {
+						try {
+							String uid = user.getCommunityId();
+							List<String> songids = null;
+							songids = crawler163music.getUserLikeSong(uid);
+							user.setLoveSongId(songids);
+							userRepository.save(user);
+						}catch (Exception e){
+							System.out.println("failed get song for user:"+user);
+						}
+
+					}
+				};
+				threadPoolTaskExecutor.execute(runnable);
+			}
+		}
+	}
 
 }

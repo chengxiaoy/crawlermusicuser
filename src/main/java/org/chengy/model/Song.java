@@ -26,8 +26,7 @@ public class Song extends BaseEntity {
 	private String composer;
 	private String lyricist;
 	private String lyric;
-	private String communityId;
-	private String community;
+
 
 
 	public String toString() {
@@ -80,22 +79,6 @@ public class Song extends BaseEntity {
 
 	public void setLanguage(String language) {
 		this.language = language;
-	}
-
-	public String getCommunity() {
-		return community;
-	}
-
-	public void setCommunity(String community) {
-		this.community = community;
-	}
-
-	public String getCommunityId() {
-		return communityId;
-	}
-
-	public void setCommunityId(String communityId) {
-		this.communityId = communityId;
 	}
 
 	public String getAlbumId() {

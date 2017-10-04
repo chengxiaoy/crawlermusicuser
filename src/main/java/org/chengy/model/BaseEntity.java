@@ -16,8 +16,26 @@ public class BaseEntity {
 	@Id
 	private String id;
 
+	String communityId;
+	String community;
+
 	public String getId() {
 		return id;
 	}
 
+	public String getCommunityId() {
+		return communityId;
+	}
+
+	public void setCommunityId(String communityId) {
+		this.communityId = communityId;
+	}
+
+	public String getCommunity() {
+		return community;
+	}
+
+	public void setCommunity(String community) {
+		this.community = community;
+	}
 }

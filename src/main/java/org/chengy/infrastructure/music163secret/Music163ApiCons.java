@@ -67,6 +67,14 @@ public class Music163ApiCons {
 
 	}
 
+	public static String getSongRecordofWeek(String uid,int pageIndex,int pageSize) throws JsonProcessingException {
+		ObjectMapper objectMapper = new ObjectMapper();
+		String offset = String.valueOf((pageIndex - 1) * pageSize);
+		return objectMapper.writeValueAsString(new Music163ApiCons().new LoveSongParamWeek(uid, offset, "true", String.valueOf(pageSize), ""));
+
+	}
+
+
 	public static String getLyricParams(String songId) throws JsonProcessingException {
 		ObjectMapper objectMapper = new ObjectMapper();
 		return objectMapper.writeValueAsString(new Music163ApiCons().new LyricParam(songId));

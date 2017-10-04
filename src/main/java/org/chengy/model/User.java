@@ -23,8 +23,6 @@ public class User extends BaseEntity {
 	private Date age;
 	private int gender;
 	private String area;
-	private String communityId;
-	private String community;
 
 	private List<String> loveSongId;
 
@@ -69,22 +67,6 @@ public class User extends BaseEntity {
 		this.area = area;
 	}
 
-	public String getCommunityId() {
-		return communityId;
-	}
-
-	public void setCommunityId(String communityId) {
-		this.communityId = communityId;
-	}
-
-
-	public String getCommunity() {
-		return community;
-	}
-
-	public void setCommunity(String community) {
-		this.community = community;
-	}
 
 	@Override
 	public String toString() {

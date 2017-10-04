@@ -2,7 +2,9 @@ package org.chengy;
 
 import org.chengy.infrastructure.music163secret.Music163ApiCons;
 import org.chengy.model.Song;
+import org.chengy.model.User;
 import org.chengy.repository.SongRepository;
+import org.chengy.repository.UserRepository;
 import org.chengy.service.crawler.Crawler163music;
 import org.chengy.service.statistics.Music163Statistics;
 import org.junit.Test;
@@ -26,9 +28,22 @@ public class CrawlerApplicationTests {
 	@Autowired
 	SongRepository songRepository;
 
+	@Autowired
+	UserRepository userRepository;
+
 
 	@Test
 	public void contextLoads() {
+	}
+
+	@Test
+	public void testCompoundIndex() {
+
+		User user = new User();
+		user.setCommunityId("262093432");
+		user.setCommunity(Music163ApiCons.communityName);
+		userRepository.save(user);
+
 	}
 
 	@Test
