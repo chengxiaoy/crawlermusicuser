@@ -36,6 +36,9 @@ spring boot+mongodb
 |告白气球	|周杰伦|	4044|
 |再也没有	|Ryan.B|3825|
 
+柱形图
+<img src="https://user-images.githubusercontent.com/19379550/31315343-72eba9ea-abdc-11e7-8ada-cd6350a15764.png" align=center width="500px" height="400px"/>
+
 
 
 寻找适合自己口味的歌曲  
