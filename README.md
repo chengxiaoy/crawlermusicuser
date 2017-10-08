@@ -14,7 +14,7 @@ spring boot+mongodb
 5. 遍历用户广度优先？
 
 # 九月30号
-1. 爬取了20w用户以及用户播放次数最多的十首歌曲的信息
+1. 爬取了20w用户以及用户播放次数最多的前一百首歌曲的信息
 2. 下一步使用python读取mongodb数据
 3. 可以做的事情有 一些数据的统计  最受喜欢的歌曲,歌手 最受喜欢的作词家 
 4. 朴素贝叶斯猜测歌词属于哪个作词者
@@ -36,7 +36,7 @@ spring boot+mongodb
 |告白气球	|周杰伦|	4044|
 |再也没有	|Ryan.B|3825|
 
-柱形图
+绘制的柱形图  
 <img src="https://user-images.githubusercontent.com/19379550/31315343-72eba9ea-abdc-11e7-8ada-cd6350a15764.png" align=center width="500px" height="400px"/>
 
 
