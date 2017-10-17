@@ -1,6 +1,5 @@
 package org.chengy.service.crawler;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.chengy.core.HttpHelper;
@@ -10,19 +9,15 @@ import org.chengy.infrastructure.music163secret.SongFactory;
 import org.chengy.infrastructure.music163secret.UserFactory;
 import org.chengy.model.Song;
 import org.chengy.model.User;
-import org.chengy.model.UserSongRelation;
 import org.chengy.repository.SongRepository;
 import org.chengy.repository.UserRepository;
-import org.chengy.repository.UserSongRelationRepository;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -37,8 +32,6 @@ public class Crawler163music {
 	private UserRepository userRepository;
 	@Autowired
 	private SongRepository songRepository;
-	@Autowired
-	private UserSongRelationRepository relationRepository;
 
 	@Autowired
 	private ObjectMapper objectMapper;
@@ -154,41 +147,24 @@ public class Crawler163music {
 		return songIds;
 	}
 
-	public void fixUserLoveSong() {
+	/**
+	 * 获取用户最近在听的歌曲
+	 * @param uid 用户id
+	 * @throws Exception
+	 */
+	public void getUserRecentSong(String uid) throws Exception {
+		List<String> songIds = new ArrayList<>();
+
+		String songRecordWeek = Music163ApiCons.getSongRecordofWeek(uid, 1, 10);
+		Document document = EncryptTools.commentAPI(songRecordWeek, Music163ApiCons.songRecordUrl);
+		JsonNode root = objectMapper.readTree(document.text());
+		songIds =
+				root.findValue("weekData").findValues("song").stream()
+						.map(ob -> ob.get("id").asText()).collect(Collectors.toList());
+		System.out.println(songIds);
 
 	}
 
-	public void saveUserSongRelation(String uid) {
-
-		UserSongRelation relation = new UserSongRelation();
-		try {
-			List<String> songIds = new ArrayList<>();
-			String songRecordParam = Music163ApiCons.getSongRecordALLParams(uid, 1, 100);
-			Document document = EncryptTools.commentAPI(songRecordParam, Music163ApiCons.songRecordUrl);
-			JsonNode root = objectMapper.readTree(document.text());
-			songIds =
-					root.findValue("allData").findValues("song").stream()
-							.map(ob -> ob.get("id").asText()).collect(Collectors.toList());
-			relation.setAllTimeLovedSong(songIds);
-		} catch (Exception e) {
-			System.out.println("get all time like song failed:" + uid);
-		}
-		try {
-			List<String> songIds = new ArrayList<>();
-
-			String songRecordWeek = Music163ApiCons.getSongRecordofWeek(uid, 1, 10);
-			Document document = EncryptTools.commentAPI(songRecordWeek, Music163ApiCons.songRecordUrl);
-			JsonNode root = objectMapper.readTree(document.text());
-			songIds =
-					root.findValue("allData").findValues("song").stream()
-							.map(ob -> ob.get("id").asText()).collect(Collectors.toList());
-			relation.setRecentLovedSong(songIds);
-		} catch (Exception e) {
-			System.out.println("get one week like song failed:" + uid);
-		}
-
-		relationRepository.save(relation);
-	}
 
 
 	public void getSongInfo(String songId) throws Exception {

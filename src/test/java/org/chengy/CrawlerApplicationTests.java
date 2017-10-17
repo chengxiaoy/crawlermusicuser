@@ -1,5 +1,6 @@
 package org.chengy;
 
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.chengy.infrastructure.music163secret.Music163ApiCons;
 import org.chengy.model.Song;
 import org.chengy.model.User;
@@ -14,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.List;
 
 @RunWith(SpringRunner.class)
@@ -34,6 +36,12 @@ public class CrawlerApplicationTests {
 
 	@Test
 	public void contextLoads() {
+	}
+
+	@Test
+	public void getUserRencentSongTest() throws Exception {
+		crawler163music.getUserRecentSong("330313");
+
 	}
 
 	@Test
@@ -68,13 +76,32 @@ public class CrawlerApplicationTests {
 	@Test
 	public void getPopSong() throws IOException {
 
-		music163Statistics.getMostPopSong("popsong.txt");
+		music163Statistics.getMostPopSong("datafile/popsong.txt");
 	}
 
 	@Test
 	public void getRelativedUser() throws IOException {
 
 		music163Statistics.relativedUser("330313");
+	}
+
+
+	@Test
+	public void getMostPopLyricistTest() throws IOException, IllegalAccessException {
+		music163Statistics.getMostPopLyricist("datafile/mostPopLyricist.txt", "lyricist");
+	}
+
+	@Test
+	public void getMostPopComposerTest() throws IOException, IllegalAccessException {
+		music163Statistics.getMostPopLyricist("datafile/mostPopComposer.txt", "composer");
+	}
+
+	@Test
+	public void reflectTest() throws IllegalAccessException {
+		Field field= FieldUtils.getField(Song.class,"lyricist",true);
+		Song song=new Song();
+		song.setLyricist("sahobo");
+		System.out.println(field.get(song));
 	}
 
 }

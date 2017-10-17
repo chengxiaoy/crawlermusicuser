@@ -1,5 +1,6 @@
 package org.chengy.service.crawler;
 
+import org.chengy.infrastructure.music163secret.Music163ApiCons;
 import org.chengy.model.User;
 import org.chengy.repository.SongRepository;
 import org.chengy.repository.UserRepository;
@@ -74,8 +75,8 @@ public class CrawlerLauncher {
 				@Override
 				public void run() {
 					String communityId = (String) strItr.next();
-					List<User> userList = userRepository.findByCommunityId(communityId);
-					userRepository.delete(userList);
+					User user = userRepository.findByCommunityIdAndCommunity(communityId, Music163ApiCons.communityName);
+					userRepository.delete(user);
 					crawler163music.getUserInfo(communityId);
 				}
 			});
