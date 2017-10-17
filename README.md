@@ -38,13 +38,13 @@ spring boot+mongodb
 
 绘制的柱形图
 从每个人最喜欢的十首歌来统计：
-<img src="https://user-images.githubusercontent.com/19379550/31659223-fca53eb2-b2f8-11e7-867f-4504094c1e31.png" align=center width="800px" height="650px"/>
+<img src="https://user-images.githubusercontent.com/19379550/31659223-fca53eb2-b2f8-11e7-867f-4504094c1e31.png" align=center width="1000px" height="650px"/>  
 扩大到每个人最喜欢的一百首歌
-<img src="https://user-images.githubusercontent.com/19379550/31659260-2247c554-b2f9-11e7-9ce2-2c9d21120cd8.png" align=center width="800px" height="650px"/>
+<img src="https://user-images.githubusercontent.com/19379550/31659260-2247c554-b2f9-11e7-9ce2-2c9d21120cd8.png" align=center width="1000px" height="650px"/>  
 最受欢迎的作词人
-<img src="https://user-images.githubusercontent.com/19379550/31659273-2c2e039e-b2f9-11e7-9d6f-7ef095f1522e.png" align=center width="800px" height="650px"/>
+<img src="https://user-images.githubusercontent.com/19379550/31659273-2c2e039e-b2f9-11e7-9d6f-7ef095f1522e.png" align=center width="1000px" height="650px"/>  
 最受欢迎的作曲人
-<img src="https://user-images.githubusercontent.com/19379550/31659282-3638f2d6-b2f9-11e7-9432-5f318e7ffbdc.png" align=center width="800px" height="650px"/>
+<img src="https://user-images.githubusercontent.com/19379550/31659282-3638f2d6-b2f9-11e7-9432-5f318e7ffbdc.png" align=center width="1000px" height="650px"/>
 
 
 
