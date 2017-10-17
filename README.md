@@ -36,11 +36,16 @@ spring boot+mongodb
 |告白气球	|周杰伦|	4044|
 |再也没有	|Ryan.B|3825|
 
-绘制的柱形图  
-<img src="https://user-images.githubusercontent.com/19379550/31315343-72eba9ea-abdc-11e7-8ada-cd6350a15764.png" align=center width="500px" height="400px"/>
+绘制的柱形图
+从每个人最喜欢的十首歌来统计：
+<img src="https://user-images.githubusercontent.com/19379550/31659223-fca53eb2-b2f8-11e7-867f-4504094c1e31.png" align=center width="800px" height="650px"/>
+扩大到每个人最喜欢的一百首歌
+<img src="https://user-images.githubusercontent.com/19379550/31659260-2247c554-b2f9-11e7-9ce2-2c9d21120cd8.png" align=center width="800px" height="650px"/>
+最受欢迎的作词人
+<img src="https://user-images.githubusercontent.com/19379550/31659273-2c2e039e-b2f9-11e7-9d6f-7ef095f1522e.png" align=center width="800px" height="650px"/>
+最受欢迎的作曲人
+<img src="https://user-images.githubusercontent.com/19379550/31659282-3638f2d6-b2f9-11e7-9432-5f318e7ffbdc.png" align=center width="800px" height="650px"/>
 
 
 
-寻找适合自己口味的歌曲  
-基本思路是 将自己喜欢的歌曲列表和随机选取的1000个用户的歌曲列表比较  
-推荐和自己口味相关的人最近听的歌 （或是再取交集？）
+下一步 寻找和自己听歌口味近似的人
