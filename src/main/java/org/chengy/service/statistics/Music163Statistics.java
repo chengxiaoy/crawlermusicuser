@@ -33,6 +33,35 @@ public class Music163Statistics {
 
 
 	/**
+	 * 将作词家的歌词写入文件
+	 * @param lyricist
+	 * @throws IOException
+	 */
+	public void getLyricByLyricist(String lyricist) throws IOException {
+		List<Song> songList =
+				songRepository.findSongsByLyricist(lyricist);
+		String dirPath="datafile" + File.separator + "song"+File.separator+lyricist;
+		File dir = new File(dirPath);
+		if (!dir.exists()) {
+			dir.mkdirs();
+		}
+		for (Song song : songList) {
+			String songtitle = song.getTitle();
+			songtitle=songtitle.replace("/","／");
+			File file = new File(dirPath+File.separator + songtitle);
+			if (!file.exists()) {
+				System.out.println(file.getAbsolutePath());
+				file.createNewFile();
+				try (FileWriter fileWriter = new FileWriter(file)) {
+					fileWriter.write(song.getLyric());
+				}
+			}
+		}
+	}
+
+
+
+	/**
 	 * 将最受欢迎的作词人／作曲人写入到文件中
 	 *
 	 * @param filename
@@ -53,7 +82,7 @@ public class Music163Statistics {
 //				Field field =
 //						FieldUtils.getField(Song.class, fieldname);
 //				field.get(song);
-				Field field= FieldUtils.getField(Song.class,fieldname,true);
+				Field field = FieldUtils.getField(Song.class, fieldname, true);
 
 				String key = field.get(song).toString();
 				if (key != null && !key.equals("")) {
@@ -158,17 +187,21 @@ public class Music163Statistics {
 
 		List<String> songList = user.getLoveSongId();
 		Random random = new Random();
-		int pageIndex = random.nextInt(190);
+		int pageIndex = random.nextInt(210);
 		System.out.println("===========" + pageIndex);
 		int pageSize = 1000;
 		List<User> userList = userRepository.findAll(new PageRequest(pageIndex, pageSize)).getContent();
-		Map<String, Integer> map = new HashMap<>();
+		Map<String, Integer> userIdInfo = new HashMap<>();
+		Map<String, List<String>> userSongInfo = new HashMap<>();
+
 		for (User other : userList) {
-			map.put(other.getCommunityId(), getIntersectionNum(songList, other.getLoveSongId()));
+			List<String> userSongs = other.getLoveSongId();
+			userIdInfo.put(other.getCommunityId(), getIntersectionNum(songList, userSongs));
+			userSongInfo.put(other.getCommunityId(), userSongs);
 		}
 
 		List<Map.Entry<String, Integer>> entries =
-				map.entrySet().stream().sorted((ob1, ob2) -> -(ob1.getValue() - ob2.getValue())).collect(Collectors.toList());
+				userIdInfo.entrySet().stream().sorted((ob1, ob2) -> -(ob1.getValue() - ob2.getValue())).collect(Collectors.toList());
 
 
 		List<String> relativeUser = new ArrayList<>();
@@ -176,48 +209,43 @@ public class Music163Statistics {
 		for (Map.Entry<String, Integer> entry : entries) {
 			relativeUser.add(entry.getKey());
 			i++;
-			if (i == 10) {
+			if (i == 20) {
 				break;
 			}
 		}
 
 		List<User> relativeUserList = userRepository.findByCommunityIdContainsAndCommunity(relativeUser, Music163ApiCons.communityName);
+
+
 		try (FileWriter fileWriter = new FileWriter(file)) {
 			for (User item : relativeUserList) {
 				fileWriter.write(item.getUsername());
 				fileWriter.write("\t");
-				fileWriter.write(item.getCommunityId());
+				String communityId = item.getCommunityId();
+				fileWriter.write(communityId);
+				fileWriter.write("\t");
+				List<Song> relativeSong = songRepository.findByCommunityIdContainsAndCommunity(userSongInfo.get(item.getCommunityId()), Music163ApiCons.communityName);
+				for (Song song : relativeSong) {
+					fileWriter.write(song.getTitle());
+					fileWriter.write("\t");
+				}
 				fileWriter.write("\n");
 			}
 		}
 	}
 
 
-	private void generatePotentialGF(String filename) throws IOException {
-		File file = new File(filename);
-		BufferedReader reader = new BufferedReader(new FileReader(file));
-		FileWriter fileWriter = new FileWriter(new File(filename + "pro"));
-
-
-		String line = null;
-		int i = 0;
-		while (i++ < 10) {
-			line = reader.readLine();
-			String[] hehe = line.trim().split("\t");
-
-		}
-
-
-	}
-
 	int getIntersectionNum(List<String> idList1, List<String> idList2) {
 		int i = 0;
+		List<String> intersection = new ArrayList<>();
 		HashSet<String> set = new HashSet<>(idList1);
 		for (String id : idList2) {
 			if (set.contains(id)) {
 				i++;
+				intersection.add(id);
 			}
 		}
+		idList2 = intersection;
 		return i;
 	}
 

@@ -12,8 +12,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.List;
@@ -97,9 +101,16 @@ public class CrawlerApplicationTests {
 	}
 
 	@Test
+	public void getSongBylyricist() throws IOException {
+
+	music163Statistics.getLyricByLyricist("方文山");
+	}
+
+
+	@Test
 	public void reflectTest() throws IllegalAccessException {
-		Field field= FieldUtils.getField(Song.class,"lyricist",true);
-		Song song=new Song();
+		Field field = FieldUtils.getField(Song.class, "lyricist", true);
+		Song song = new Song();
 		song.setLyricist("sahobo");
 		System.out.println(field.get(song));
 	}

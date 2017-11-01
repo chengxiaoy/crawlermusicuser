@@ -8,6 +8,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.chengy.configuration.HttpConfig;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -20,8 +21,8 @@ public class HttpHelper {
 
 	public static CloseableHttpClient client() {
 		return HttpClients.custom().
-				setConnectionManager(HTTPConnectionManager.getConnectionManager()).setMaxConnPerRoute(200)
-				.setMaxConnTotal(200).build();
+				setConnectionManager(HTTPConnectionManager.getConnectionManager()).
+				setMaxConnPerRoute(200).setMaxConnTotal(200).build();
 
 	}
 

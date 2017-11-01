@@ -1,6 +1,7 @@
 package org.chengy.repository;
 
 import org.chengy.model.Song;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;
@@ -11,4 +12,9 @@ import java.util.List;
 public interface SongRepository extends MongoRepository<Song, String> {
 
 	Song findSongByCommunityIdAndCommunity(String songId, String community);
+
+	List<Song> findByCommunityIdContainsAndCommunity(List<String> songList,String community);
+
+	List<Song> findSongsByLyricist(String lyricist);
+
 }
