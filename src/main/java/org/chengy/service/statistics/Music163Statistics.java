@@ -214,7 +214,7 @@ public class Music163Statistics {
 			}
 		}
 
-		List<User> relativeUserList = userRepository.findByCommunityIdContainsAndCommunity(relativeUser, Music163ApiCons.communityName);
+		List<User> relativeUserList = userRepository.findUsersByCommunityIdInAndCommunity(relativeUser, Music163ApiCons.communityName);
 
 
 		try (FileWriter fileWriter = new FileWriter(file)) {
@@ -224,7 +224,7 @@ public class Music163Statistics {
 				String communityId = item.getCommunityId();
 				fileWriter.write(communityId);
 				fileWriter.write("\t");
-				List<Song> relativeSong = songRepository.findByCommunityIdContainsAndCommunity(userSongInfo.get(item.getCommunityId()), Music163ApiCons.communityName);
+				List<Song> relativeSong = songRepository.findSongsByCommunityIdInAndCommunity(userSongInfo.get(item.getCommunityId()), Music163ApiCons.communityName);
 				for (Song song : relativeSong) {
 					fileWriter.write(song.getTitle());
 					fileWriter.write("\t");
@@ -245,7 +245,8 @@ public class Music163Statistics {
 				intersection.add(id);
 			}
 		}
-		idList2 = intersection;
+		idList2.clear();
+		idList2.addAll(intersection);
 		return i;
 	}
 

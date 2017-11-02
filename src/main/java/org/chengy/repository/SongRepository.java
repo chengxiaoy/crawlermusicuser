@@ -13,7 +13,7 @@ public interface SongRepository extends MongoRepository<Song, String> {
 
 	Song findSongByCommunityIdAndCommunity(String songId, String community);
 
-	List<Song> findByCommunityIdContainsAndCommunity(List<String> songList,String community);
+	List<Song> findSongsByCommunityIdInAndCommunity(List<String> songList,String community);
 
 	List<Song> findSongsByLyricist(String lyricist);
 

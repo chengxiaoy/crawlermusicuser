@@ -12,5 +12,6 @@ public interface UserRepository extends MongoRepository<User, String> {
 	User findByCommunityIdAndCommunity(String communityId, String community);
 
 
-	List<User> findByCommunityIdContainsAndCommunity(List<String> communityIds, String community);
+
+	List<User> findUsersByCommunityIdInAndCommunity(List<String> communityIds, String community);
 }
