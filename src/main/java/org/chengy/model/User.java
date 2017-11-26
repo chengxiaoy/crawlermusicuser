@@ -21,6 +21,10 @@ public class User extends BaseEntity {
 	private String avatar;
 	private String signature;
 	private Date age;
+	/**
+	 * 1:male 2:female
+	 * 0 present unknow
+	 */
 	private int gender;
 	private String area;
 

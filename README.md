@@ -49,3 +49,16 @@ spring boot+mongodb
 
 
 下一步 寻找和自己听歌口味近似的人
+
+用户的特征：
+年龄 性别 地区  （评论和签名）  （歌曲）
+
+歌曲的特征：
+歌词  评论
+
+使用TF—IDF来获取用户的歌曲特征（https://www.cnblogs.com/biyeymyhjob/archive/2012/07/17/2595249.html）
+
+
+
+
+

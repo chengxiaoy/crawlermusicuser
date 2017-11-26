@@ -58,7 +58,16 @@ public class Crawler163music {
 
 				String html = HttpHelper.get(Music163ApiCons.Music163UserHost + id);
 				Document document = Jsoup.parse(html);
-				int gender = document.select("#j-name-wrap > i").hasClass("u-icn-01") ? 1 : 0;
+				//性别
+				boolean ismale=document.select("#j-name-wrap > i").hasClass("u-icn-01");
+				boolean isfemale=document.select("#j-name-wrap > i").hasClass("u-icn-02");
+				int gender=0;
+				if (ismale){
+					gender=1;
+				}else if(isfemale){
+					gender=2;
+				}
+
 				String name = document.select("#j-name-wrap > span.tit.f-ff2.s-fc0.f-thide").get(0).html();
 				//个性签名
 				Elements signatureinfo = document.select("#head-box > dd > div.inf.s-fc3.f-brk");
@@ -77,7 +86,13 @@ public class Crawler163music {
 				Elements elements = document.select("#head-box > dd > div:nth-child(4) > span:nth-child(1)");
 				String area = "";
 				if (elements.size() > 0) {
-					area = elements.get(0).html().split("：")[1];
+					try {
+						area = elements.get(0).html().split("：")[1];
+					}catch (Exception e){
+
+						elements = document.select("#head-box > dd > div:nth-child(3) > span:nth-child(1)");
+						area = elements.get(0).html().split("：")[1];
+					}
 				} else {
 					elements = document.select("#head-box > dd > div.inf.s-fc3 > span");
 					if (elements.size() > 0) {
@@ -129,7 +144,6 @@ public class Crawler163music {
 		return ids;
 	}
 
-
 	public List<String> getUserLikeSong(String uid) throws Exception {
 		List<String> songIds = new ArrayList<>();
 		try {
@@ -164,8 +178,6 @@ public class Crawler163music {
 		System.out.println(songIds);
 
 	}
-
-
 
 	public void getSongInfo(String songId) throws Exception {
 

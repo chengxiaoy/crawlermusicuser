@@ -1,12 +1,22 @@
 package org.chengy.service.statistics;
 
 import ch.qos.logback.core.joran.util.beans.BeanUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.sun.org.apache.bcel.internal.generic.NEW;
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.chengy.infrastructure.music163secret.EncryptTools;
 import org.chengy.infrastructure.music163secret.Music163ApiCons;
 import org.chengy.model.Song;
+import org.chengy.model.SongRecord;
 import org.chengy.model.User;
+import org.chengy.repository.SongRecordRepository;
 import org.chengy.repository.SongRepository;
 import org.chengy.repository.UserRepository;
+import org.jsoup.nodes.Document;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -30,25 +40,28 @@ public class Music163Statistics {
 	UserRepository userRepository;
 	@Autowired
 	SongRepository songRepository;
+	@Autowired
+	SongRecordRepository songRecordRepository;
 
 
 	/**
 	 * 将作词家的歌词写入文件
+	 *
 	 * @param lyricist
 	 * @throws IOException
 	 */
 	public void getLyricByLyricist(String lyricist) throws IOException {
 		List<Song> songList =
 				songRepository.findSongsByLyricist(lyricist);
-		String dirPath="datafile" + File.separator + "song"+File.separator+lyricist;
+		String dirPath = "datafile" + File.separator + "song" + File.separator + lyricist;
 		File dir = new File(dirPath);
 		if (!dir.exists()) {
 			dir.mkdirs();
 		}
 		for (Song song : songList) {
 			String songtitle = song.getTitle();
-			songtitle=songtitle.replace("/","／");
-			File file = new File(dirPath+File.separator + songtitle);
+			songtitle = songtitle.replace("/", "／");
+			File file = new File(dirPath + File.separator + songtitle);
 			if (!file.exists()) {
 				System.out.println(file.getAbsolutePath());
 				file.createNewFile();
@@ -58,8 +71,6 @@ public class Music163Statistics {
 			}
 		}
 	}
-
-
 
 	/**
 	 * 将最受欢迎的作词人／作曲人写入到文件中
@@ -109,7 +120,6 @@ public class Music163Statistics {
 			}
 		}
 	}
-
 
 	/**
 	 * 查询被喜欢次数最多的歌曲的歌曲
@@ -216,7 +226,6 @@ public class Music163Statistics {
 
 		List<User> relativeUserList = userRepository.findUsersByCommunityIdInAndCommunity(relativeUser, Music163ApiCons.communityName);
 
-
 		try (FileWriter fileWriter = new FileWriter(file)) {
 			for (User item : relativeUserList) {
 				fileWriter.write(item.getUsername());
@@ -234,7 +243,13 @@ public class Music163Statistics {
 		}
 	}
 
-
+	/**
+	 * 获取歌曲的交集
+	 *
+	 * @param idList1
+	 * @param idList2
+	 * @return
+	 */
 	int getIntersectionNum(List<String> idList1, List<String> idList2) {
 		int i = 0;
 		List<String> intersection = new ArrayList<>();
@@ -248,6 +263,56 @@ public class Music163Statistics {
 		idList2.clear();
 		idList2.addAll(intersection);
 		return i;
+	}
+
+
+	/**
+	 * 根据TF-IDF原理获取用户最具代表性的歌曲
+	 *
+	 * @param uid
+	 * @return
+	 */
+	public void getUserRelativeSong(String uid){
+
+	}
+
+
+	/**
+	 * 记录歌曲信息
+	 * @param userid
+	 * @throws Exception
+	 */
+	public void getSongRecord(String userid) throws Exception {
+
+		String songRecordParam = Music163ApiCons.getSongRecordALLParams(userid, 1, 100);
+		Document document = EncryptTools.commentAPI(songRecordParam, Music163ApiCons.songRecordUrl);
+		String jsonStr = document.text();
+		ObjectMapper objectMapper = new ObjectMapper();
+		JsonNode jsonNode = objectMapper.readTree(jsonStr);
+		List<HashMap<String, Object>> hashMapList
+				= objectMapper.readValue(jsonNode.findValue("allData").toString(),
+				new TypeReference<List<HashMap<String, Object>>>() {
+				});
+
+		Map<String, Integer> recordInfo =
+				hashMapList.stream().collect(Collectors.toMap(ob -> (((HashMap) ob.get("song")).get("id")).toString(), ob -> (Integer) ob.get("score")));
+
+		for (Map.Entry<String, Integer> entry : recordInfo.entrySet()) {
+			SongRecord songRecord =
+					songRecordRepository.findSongRecordByCommunityIdAndCommunity(entry.getKey(), Music163ApiCons.communityName);
+
+			if (songRecord == null) {
+				SongRecord newSongRecord = new SongRecord();
+				newSongRecord.setLoveNum(1);
+				newSongRecord.setScore((long) entry.getValue());
+				songRecordRepository.save(newSongRecord);
+			} else {
+				songRecord.setScore(songRecord.getScore()+entry.getValue());
+				songRecord.setLoveNum(songRecord.getLoveNum()+1);
+				songRecordRepository.save(songRecord);
+			}
+		}
+
 	}
 
 

@@ -1,5 +1,7 @@
 package org.chengy.service.crawler;
 
+import org.chengy.configuration.CrawlerBizConfig;
+import org.chengy.configuration.HttpConfig;
 import org.chengy.infrastructure.music163secret.Music163ApiCons;
 import org.chengy.model.User;
 import org.chengy.repository.SongRepository;
@@ -61,27 +63,49 @@ public class CrawlerLauncher {
 
 	}
 
-	public void saveMusic163User() {
-		Random random = new Random();
-		int rand = random.nextInt(200);
-		System.out.println(rand);
-		int threadNums = 13;
-		Pageable pageable = new PageRequest(rand, threadNums);
-		List<String> listStr = userRepository.findAll(pageable).getContent().stream().map(ob -> ob.getCommunityId()).collect(Collectors.toList());
-		System.out.println(listStr);
-		Iterator strItr = listStr.iterator();
-		for (int i = 0; i < threadNums; i++) {
-			Thread thread = new Thread(new Runnable() {
-				@Override
-				public void run() {
-					String communityId = (String) strItr.next();
-					User user = userRepository.findByCommunityIdAndCommunity(communityId, Music163ApiCons.communityName);
-					userRepository.delete(user);
-					crawler163music.getUserInfo(communityId);
+	public void crawlMusic163User() throws InterruptedException {
+		boolean flag=true;
+		while (flag) {
+			long userCount=userRepository.count();
+			HttpConfig.getHttpProxy();
+			int threadNums =Integer.valueOf(CrawlerBizConfig.getCrawlerUserThreadNum());
+
+			if (userCount >= threadNums) {
+				int pageId=(int) userCount/threadNums;
+				Pageable pageable = new PageRequest(pageId-1, threadNums);
+				List<String> listStr = userRepository.findAll(pageable).getContent().stream().map(ob -> ob.getCommunityId()).collect(Collectors.toList());
+				System.out.println(listStr);
+				Iterator strItr = listStr.iterator();
+				for (int i = 0; i < threadNums; i++) {
+					Thread thread = new Thread(new Runnable() {
+						@Override
+						public void run() {
+							String communityId = (String) strItr.next();
+							User user = userRepository.findByCommunityIdAndCommunity(communityId, Music163ApiCons.communityName);
+							userRepository.delete(user);
+							crawler163music.getUserInfo(communityId);
+						}
+					});
+					thread.start();
 				}
-			});
-			thread.start();
+				flag=false;
+			}
+
+			//第一次启动的时候的时候
+			if(userCount<threadNums){
+				new Thread(new Runnable() {
+					@Override
+					public void run() {
+						crawler163music.getUserInfo(CrawlerBizConfig.getCrawlerUserSeed());
+
+					}
+				}).start();
+			}
+			Thread.sleep(1000*60*5);
+
 		}
+
+
 	}
 
 	/**
@@ -103,8 +127,8 @@ public class CrawlerLauncher {
 							songids = crawler163music.getUserLikeSong(uid);
 							user.setLoveSongId(songids);
 							userRepository.save(user);
-						}catch (Exception e){
-							System.out.println("failed get song for user:"+user);
+						} catch (Exception e) {
+							System.out.println("failed get song for user:" + user);
 						}
 
 					}
