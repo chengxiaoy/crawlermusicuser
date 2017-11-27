@@ -125,7 +125,7 @@ public class CrawlerApplicationTests {
 
 	@Test
 	public void getSongPlayTimes() throws Exception {
-		music163Statistics.getTopSongforUser("330313");
+		music163Statistics.getSongRecord("330313");
 	}
 
 	@Test

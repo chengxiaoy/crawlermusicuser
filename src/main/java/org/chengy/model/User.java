@@ -28,6 +28,8 @@ public class User extends BaseEntity {
 	private int gender;
 	private String area;
 
+	private Boolean SongRecord;
+
 	private List<String> loveSongId;
 
 
@@ -91,5 +93,13 @@ public class User extends BaseEntity {
 
 	public void setAge(Date age) {
 		this.age = age;
+	}
+
+	public Boolean getSongRecord() {
+		return SongRecord;
+	}
+
+	public void setSongRecord(Boolean songRecord) {
+		SongRecord = songRecord;
 	}
 }

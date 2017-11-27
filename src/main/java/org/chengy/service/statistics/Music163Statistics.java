@@ -10,6 +10,7 @@ import com.sun.org.apache.bcel.internal.generic.NEW;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.chengy.infrastructure.music163secret.EncryptTools;
 import org.chengy.infrastructure.music163secret.Music163ApiCons;
+import org.chengy.infrastructure.music163secret.SongRecordFactory;
 import org.chengy.model.Song;
 import org.chengy.model.SongRecord;
 import org.chengy.model.User;
@@ -19,6 +20,7 @@ import org.chengy.repository.UserRepository;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
@@ -284,6 +286,11 @@ public class Music163Statistics {
 	 */
 	public void getSongRecord(String userid) throws Exception {
 
+		User user=userRepository.findByCommunityIdAndCommunity(userid,Music163ApiCons.communityName);
+		if (user.getSongRecord()!=null&&user.getSongRecord()){
+			return;
+		}
+
 		String songRecordParam = Music163ApiCons.getSongRecordALLParams(userid, 1, 100);
 		Document document = EncryptTools.commentAPI(songRecordParam, Music163ApiCons.songRecordUrl);
 		String jsonStr = document.text();
@@ -302,9 +309,7 @@ public class Music163Statistics {
 					songRecordRepository.findSongRecordByCommunityIdAndCommunity(entry.getKey(), Music163ApiCons.communityName);
 
 			if (songRecord == null) {
-				SongRecord newSongRecord = new SongRecord();
-				newSongRecord.setLoveNum(1);
-				newSongRecord.setScore((long) entry.getValue());
+				SongRecord newSongRecord = SongRecordFactory.buildSongRecord(entry.getKey(),Music163ApiCons.communityName,1,(long) entry.getValue());
 				songRecordRepository.save(newSongRecord);
 			} else {
 				songRecord.setScore(songRecord.getScore()+entry.getValue());
@@ -313,6 +318,8 @@ public class Music163Statistics {
 			}
 		}
 
+		user.setSongRecord(true);
+		userRepository.save(user);
 	}
 
 

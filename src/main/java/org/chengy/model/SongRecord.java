@@ -34,7 +34,7 @@ public class SongRecord extends BaseEntity {
 	private List<String> loverIds;
 
 	@Version
-	private Date version;
+	private Integer version;
 
 	public Long getScore() {
 		return score;
@@ -60,11 +60,12 @@ public class SongRecord extends BaseEntity {
 		this.loverIds = loverIds;
 	}
 
-	public Date getVersion() {
+
+	public Integer getVersion() {
 		return version;
 	}
 
-	public void setVersion(Date version) {
+	public void setVersion(Integer version) {
 		this.version = version;
 	}
 }

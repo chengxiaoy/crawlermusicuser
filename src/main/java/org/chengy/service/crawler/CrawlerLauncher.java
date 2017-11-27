@@ -6,6 +6,7 @@ import org.chengy.infrastructure.music163secret.Music163ApiCons;
 import org.chengy.model.User;
 import org.chengy.repository.SongRepository;
 import org.chengy.repository.UserRepository;
+import org.chengy.service.statistics.Music163Statistics;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +30,8 @@ public class CrawlerLauncher {
 	SongRepository songRepository;
 	@Autowired
 	Crawler163music crawler163music;
+	@Autowired
+	Music163Statistics music163Statistics;
 	@Autowired
 	ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
@@ -64,15 +67,15 @@ public class CrawlerLauncher {
 	}
 
 	public void crawlMusic163User() throws InterruptedException {
-		boolean flag=true;
+		boolean flag = true;
 		while (flag) {
-			long userCount=userRepository.count();
+			long userCount = userRepository.count();
 			HttpConfig.getHttpProxy();
-			int threadNums =Integer.valueOf(CrawlerBizConfig.getCrawlerUserThreadNum());
+			int threadNums = Integer.valueOf(CrawlerBizConfig.getCrawlerUserThreadNum());
 
 			if (userCount >= threadNums) {
-				int pageId=(int) userCount/threadNums;
-				Pageable pageable = new PageRequest(pageId-1, threadNums);
+				int pageId = (int) userCount / threadNums;
+				Pageable pageable = new PageRequest(pageId - 1, threadNums);
 				List<String> listStr = userRepository.findAll(pageable).getContent().stream().map(ob -> ob.getCommunityId()).collect(Collectors.toList());
 				System.out.println(listStr);
 				Iterator strItr = listStr.iterator();
@@ -88,11 +91,11 @@ public class CrawlerLauncher {
 					});
 					thread.start();
 				}
-				flag=false;
+				flag = false;
 			}
 
 			//第一次启动的时候的时候
-			if(userCount<threadNums){
+			if (userCount < threadNums) {
 				new Thread(new Runnable() {
 					@Override
 					public void run() {
@@ -101,7 +104,7 @@ public class CrawlerLauncher {
 					}
 				}).start();
 			}
-			Thread.sleep(1000*60*5);
+			Thread.sleep(1000 * 60 * 5);
 
 		}
 
@@ -136,6 +139,29 @@ public class CrawlerLauncher {
 				threadPoolTaskExecutor.execute(runnable);
 			}
 		}
+	}
+
+
+	public void getSongRecordInfo() {
+		int pageIndex = 1;
+		int pageSize = 100;
+		Pageable pageable = new PageRequest(pageIndex, pageSize);
+		List<User> userList = userRepository.findAll(pageable).getContent();
+		while (userList.size()>0) {
+			List<String> userIds = userList.stream().filter(ob->ob.getSongRecord()==null||!ob.getSongRecord()).map(ob -> ob.getCommunityId()).collect(Collectors.toList());
+
+			for (String uid : userIds) {
+				try {
+					music163Statistics.getSongRecord(uid);
+				} catch (Exception e) {
+					System.out.println("get uid " + uid + " song record info failed");
+				}
+			}
+			pageIndex++;
+			pageable=new PageRequest(pageIndex,pageSize);
+			userList=userRepository.findAll(pageable).getContent();
+		}
+
 	}
 
 }
