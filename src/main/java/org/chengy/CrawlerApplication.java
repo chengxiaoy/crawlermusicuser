@@ -25,7 +25,7 @@ public class CrawlerApplication implements CommandLineRunner {
 //		launcher.saveMusic163SongByUser();
 //
 //		launcher.crawlMusic163User();
-        launcher.getSongRecordInfo();
+        //launcher.getSongRecordInfo();
 	}
 
 }

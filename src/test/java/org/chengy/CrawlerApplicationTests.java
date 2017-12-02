@@ -139,23 +139,15 @@ public class CrawlerApplicationTests {
 	}
 
 	@Test
-	public void testJson() throws Exception {
-		String songRecordParam = Music163ApiCons.getSongRecordALLParams("330313", 1, 100);
-		Document document = EncryptTools.commentAPI(songRecordParam, Music163ApiCons.songRecordUrl);
-		String jsonStr = document.text();
-		ObjectMapper objectMapper = new ObjectMapper();
-		JsonNode jsonNode = objectMapper.readTree(jsonStr);
-		List<HashMap<String, Object>> hashMapList
-				= objectMapper.readValue(jsonNode.findValue("allData").toString(),
-				new TypeReference<List<HashMap<String, Object>>>() {
-				});
+	public void getRelativeSong() {
+		try {
+			Map<String, Double> score = music163Statistics.getUserRelativeSong("252839335", "10");
+			List<Song> songList = songRepository.findSongsByCommunityIdInAndCommunity(new ArrayList<>(score.keySet()), Music163ApiCons.communityName);
+			System.out.println(songList.stream().map(ob -> ob.getTitle()).collect(Collectors.toList()));
 
-		Map<String, Integer> recordInfo =
-				hashMapList.stream().collect(Collectors.toMap(ob -> (((HashMap) ob.get("song")).get("id")).toString(), ob -> (Integer) ob.get("score")));
-
-		System.out.println(recordInfo);
-
-
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 

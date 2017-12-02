@@ -1,0 +1,26 @@
+db.getCollection('user').aggregate([{ "$group": {
+        "_id": { "communityId": "$communityId", "community":"$community" },
+        "dups": { "$push": "$_id" },
+        "count": { "$sum": 1 }
+    }},
+    { "$match": { "count": { "$gt": 1 } }}
+],
+    {allowDiskUse:true}).forEach(function(doc) {
+    doc.dups.shift();
+    db.events.remove({ "_id": {"$in": doc.dups }});
+});
+
+//WORK GOOD
+db.getCollection('user').aggregate([{ "$group": {
+        "_id": { "communityId": "$communityId","community":"$community" },
+        "dups": { "$push": "$_id" },
+        "count": { "$sum": 1 }
+    }},
+    { "$match": { "count": { "$gt": 1 } }}
+], {
+  allowDiskUse:true,
+  cursor:{}
+ }).forEach(function(doc) { u_id = doc.dups.shift();
+    printjson(u_id)
+    db.getCollection('user').remove({ "_id": u_id });
+});

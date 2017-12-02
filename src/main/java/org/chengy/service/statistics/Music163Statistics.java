@@ -278,11 +278,6 @@ public class Music163Statistics {
 	 */
 	public Map<String, Double> getUserRelativeSong(String userid, String k) throws Exception {
 
-		User user = userRepository.findByCommunityIdAndCommunity(userid, Music163ApiCons.communityName);
-		if (user.getSongRecord() != null && !user.getSongRecord()) {
-			return null;
-		}
-
 		String songRecordParam = Music163ApiCons.getSongRecordALLParams(userid, 1, 100);
 		Document document = EncryptTools.commentAPI(songRecordParam, Music163ApiCons.songRecordUrl);
 		String jsonStr = document.text();
@@ -303,26 +298,23 @@ public class Music163Statistics {
 		List<String> songids =
 				new ArrayList<>(recordInfo.keySet());
 
-		List<Song> songList = songRepository.findSongsByCommunityIdInAndCommunity(songids, Music163ApiCons.communityName);
 
 		List<SongRecord> songRecordList = songRecordRepository.findSongRecordsByCommunityIdInAndCommunity(songids, Music163ApiCons.communityName);
 		Map<String, SongRecord> songRecordMap = songRecordList.stream().collect(Collectors.toMap(BaseEntity::getCommunityId, ob -> ob));
 
-		Map<String, Double> IDFmap = songList.stream().collect(Collectors.toMap(ob1 -> ob1.getCommunityId(), ob2 -> recordInfo.get(ob2.getCommunityId())
+		Map<String, Double> IDFmap = songRecordList.stream().collect(Collectors.toMap(ob1 -> ob1.getCommunityId(), ob2 -> recordInfo.get(ob2.getCommunityId())
 				/ calculateIDF(alldata, (long) songRecordMap.get(ob2.getCommunityId()).getLoveNum())));
 
 
 		Map<String, Double> relativeSong =
 				IDFmap.entrySet().stream().sorted((ob1, ob2) -> {
 					if (ob1.getValue() < ob2.getValue()) {
-						return -1;
+						return 1;
 					}
-					return 1;
+					return -1;
 				}).limit((Long.parseLong(k))).collect(Collectors.toMap(ob1 -> ob1.getKey(), ob2 -> ob2.getValue()));
 
 		return relativeSong;
-
-
 	}
 
 	public double calculateIDF(long alldata, long currentdata) {
