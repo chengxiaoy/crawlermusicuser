@@ -11,6 +11,7 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 import org.chengy.infrastructure.music163secret.EncryptTools;
 import org.chengy.infrastructure.music163secret.Music163ApiCons;
 import org.chengy.infrastructure.music163secret.SongRecordFactory;
+import org.chengy.model.BaseEntity;
 import org.chengy.model.Song;
 import org.chengy.model.SongRecord;
 import org.chengy.model.User;
@@ -21,6 +22,7 @@ import org.jsoup.nodes.Document;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
@@ -269,25 +271,78 @@ public class Music163Statistics {
 
 
 	/**
-	 * 根据TF-IDF原理获取用户最具代表性的歌曲
+	 * 根据TF-IDF原理获取用户k条最具代表性的歌曲
 	 *
-	 * @param uid
-	 * @return
+	 * @param userid 用户id
+	 * @param k      k条
 	 */
-	public void getUserRelativeSong(String uid){
+	public Map<String, Double> getUserRelativeSong(String userid, String k) throws Exception {
+
+		User user = userRepository.findByCommunityIdAndCommunity(userid, Music163ApiCons.communityName);
+		if (user.getSongRecord() != null && !user.getSongRecord()) {
+			return null;
+		}
+
+		String songRecordParam = Music163ApiCons.getSongRecordALLParams(userid, 1, 100);
+		Document document = EncryptTools.commentAPI(songRecordParam, Music163ApiCons.songRecordUrl);
+		String jsonStr = document.text();
+		ObjectMapper objectMapper = new ObjectMapper();
+		JsonNode jsonNode = objectMapper.readTree(jsonStr);
+		List<HashMap<String, Object>> hashMapList
+				= objectMapper.readValue(jsonNode.findValue("allData").toString(),
+				new TypeReference<List<HashMap<String, Object>>>() {
+				});
+
+		Map<String, Integer> recordInfo =
+				hashMapList.stream().collect(Collectors.toMap(ob -> (((HashMap) ob.get("song")).get("id")).toString(), ob -> (Integer) ob.get("score")));
+
+
+		long alldata =
+				userRepository.countAllBySongRecordIsTrue();
+
+		List<String> songids =
+				new ArrayList<>(recordInfo.keySet());
+
+		List<Song> songList = songRepository.findSongsByCommunityIdInAndCommunity(songids, Music163ApiCons.communityName);
+
+		List<SongRecord> songRecordList = songRecordRepository.findSongRecordsByCommunityIdInAndCommunity(songids, Music163ApiCons.communityName);
+		Map<String, SongRecord> songRecordMap = songRecordList.stream().collect(Collectors.toMap(BaseEntity::getCommunityId, ob -> ob));
+
+		Map<String, Double> IDFmap = songList.stream().collect(Collectors.toMap(ob1 -> ob1.getCommunityId(), ob2 -> recordInfo.get(ob2.getCommunityId())
+				/ calculateIDF(alldata, (long) songRecordMap.get(ob2.getCommunityId()).getLoveNum())));
+
+
+		Map<String, Double> relativeSong =
+				IDFmap.entrySet().stream().sorted((ob1, ob2) -> {
+					if (ob1.getValue() < ob2.getValue()) {
+						return -1;
+					}
+					return 1;
+				}).limit((Long.parseLong(k))).collect(Collectors.toMap(ob1 -> ob1.getKey(), ob2 -> ob2.getValue()));
+
+		return relativeSong;
+
+
+	}
+
+	public double calculateIDF(long alldata, long currentdata) {
+
+		double f = (double) alldata / (double) currentdata;
+		return Math.log(f);
 
 	}
 
 
 	/**
 	 * 记录歌曲信息
+	 *
 	 * @param userid
 	 * @throws Exception
 	 */
 	public void getSongRecord(String userid) throws Exception {
 
-		User user=userRepository.findByCommunityIdAndCommunity(userid,Music163ApiCons.communityName);
-		if (user.getSongRecord()!=null&&user.getSongRecord()){
+		User user = userRepository.findByCommunityIdAndCommunity(userid, Music163ApiCons.communityName);
+		if (user.getSongRecord() != null) {
 			return;
 		}
 
@@ -309,12 +364,22 @@ public class Music163Statistics {
 					songRecordRepository.findSongRecordByCommunityIdAndCommunity(entry.getKey(), Music163ApiCons.communityName);
 
 			if (songRecord == null) {
-				SongRecord newSongRecord = SongRecordFactory.buildSongRecord(entry.getKey(),Music163ApiCons.communityName,1,(long) entry.getValue());
+				SongRecord newSongRecord = SongRecordFactory.buildSongRecord(entry.getKey(), Music163ApiCons.communityName, 1, (long) entry.getValue());
 				songRecordRepository.save(newSongRecord);
 			} else {
-				songRecord.setScore(songRecord.getScore()+entry.getValue());
-				songRecord.setLoveNum(songRecord.getLoveNum()+1);
-				songRecordRepository.save(songRecord);
+				try{
+					songRecord.setScore(songRecord.getScore() + entry.getValue());
+					songRecord.setLoveNum(songRecord.getLoveNum() + 1);
+					songRecordRepository.save(songRecord);
+				}catch (OptimisticLockingFailureException e){
+					System.out.println("retry update songRecord");
+
+					songRecord=songRecordRepository.findSongRecordByCommunityIdAndCommunity(songRecord.getCommunityId(), Music163ApiCons.communityName);
+					songRecord.setScore(songRecord.getScore() + entry.getValue());
+					songRecord.setLoveNum(songRecord.getLoveNum() + 1);
+					songRecordRepository.save(songRecord);
+				}
+
 			}
 		}
 

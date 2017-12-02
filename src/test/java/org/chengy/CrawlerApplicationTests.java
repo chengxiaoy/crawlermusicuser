@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +48,15 @@ public class CrawlerApplicationTests {
 
 	@Autowired
 	UserRepository userRepository;
+
+	@Test
+	public void getRelativedSong() throws Exception {
+		Map<String, Double> relativeSongmap =
+				music163Statistics.getUserRelativeSong("330313", "10");
+		List<Song> songList = songRepository.findSongsByCommunityIdInAndCommunity(new ArrayList<>(relativeSongmap.keySet()), Music163ApiCons.communityName);
+		System.out.println(songList.stream().map(ob -> ob.getTitle()).collect(Collectors.toList()));
+
+	}
 
 
 	@Test
@@ -141,7 +151,7 @@ public class CrawlerApplicationTests {
 				});
 
 		Map<String, Integer> recordInfo =
-				hashMapList.stream().collect(Collectors.toMap(ob ->(((HashMap)ob.get("song")).get("id")).toString(), ob ->(Integer)ob.get("score")));
+				hashMapList.stream().collect(Collectors.toMap(ob -> (((HashMap) ob.get("song")).get("id")).toString(), ob -> (Integer) ob.get("score")));
 
 		System.out.println(recordInfo);
 

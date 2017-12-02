@@ -147,19 +147,32 @@ public class CrawlerLauncher {
 		int pageSize = 100;
 		Pageable pageable = new PageRequest(pageIndex, pageSize);
 		List<User> userList = userRepository.findAll(pageable).getContent();
-		while (userList.size()>0) {
-			List<String> userIds = userList.stream().filter(ob->ob.getSongRecord()==null||!ob.getSongRecord()).map(ob -> ob.getCommunityId()).collect(Collectors.toList());
 
+		while (userList.size() > 0) {
+			userList=userList.stream().filter(ob->ob.getLoveSongId().size()>0).collect(Collectors.toList());
+			List<String> userIds = userList.stream().filter(ob -> ob.getSongRecord() == null || !ob.getSongRecord()).map(ob -> ob.getCommunityId()).collect(Collectors.toList());
 			for (String uid : userIds) {
-				try {
-					music163Statistics.getSongRecord(uid);
-				} catch (Exception e) {
-					System.out.println("get uid " + uid + " song record info failed");
-				}
+				Runnable runnable = new Runnable() {
+					@Override
+					public void run() {
+						try {
+							music163Statistics.getSongRecord(uid);
+							System.out.println("get uid " + uid + " song record info success");
+						} catch (Exception e) {
+							e.printStackTrace();
+							System.out.println("get uid " + uid + " song record info failed");
+							User user=
+							userRepository.findByCommunityIdAndCommunity(uid,Music163ApiCons.communityName);
+							user.setSongRecord(false);
+							userRepository.save(user);
+						}
+					}
+				};
+				threadPoolTaskExecutor.execute(runnable);
 			}
 			pageIndex++;
-			pageable=new PageRequest(pageIndex,pageSize);
-			userList=userRepository.findAll(pageable).getContent();
+			pageable = new PageRequest(pageIndex, pageSize);
+			userList = userRepository.findAll(pageable).getContent();
 		}
 
 	}

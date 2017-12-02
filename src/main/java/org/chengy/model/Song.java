@@ -11,7 +11,7 @@ import java.util.List;
  */
 @Document
 @CompoundIndexes({
-		@CompoundIndex(name = "songCommunity", def = "{'communityId':1,'community':1}")
+		@CompoundIndex(name = "songCommunity", def = "{'communityId':1,'community':1}",unique = true,dropDups = true)
 })
 public class Song extends BaseEntity {
 

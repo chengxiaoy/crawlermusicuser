@@ -1,5 +1,6 @@
 package org.chengy.model;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -13,7 +14,7 @@ import java.util.List;
 
 @Document
 @CompoundIndexes({
-		@CompoundIndex(name = "userCommunity",def = "{'communityId':1,'community':1}")
+		@CompoundIndex(name = "userCommunity",def = "{'communityId':1,'community':1}",unique=true,dropDups=true)
 })
 public class User extends BaseEntity {
 
@@ -28,7 +29,8 @@ public class User extends BaseEntity {
 	private int gender;
 	private String area;
 
-	private Boolean SongRecord;
+
+	private Boolean songRecord;
 
 	private List<String> loveSongId;
 
@@ -95,11 +97,12 @@ public class User extends BaseEntity {
 		this.age = age;
 	}
 
+
 	public Boolean getSongRecord() {
-		return SongRecord;
+		return songRecord;
 	}
 
 	public void setSongRecord(Boolean songRecord) {
-		SongRecord = songRecord;
+		this.songRecord = songRecord;
 	}
 }

@@ -1,7 +1,9 @@
 package org.chengy.repository;
 
 import org.chengy.model.User;
+import org.springframework.data.mongodb.repository.CountQuery;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 
 import java.util.List;
 
@@ -12,6 +14,8 @@ public interface UserRepository extends MongoRepository<User, String> {
 	User findByCommunityIdAndCommunity(String communityId, String community);
 
 
-
 	List<User> findUsersByCommunityIdInAndCommunity(List<String> communityIds, String community);
+
+
+	public Long countAllBySongRecordIsTrue();
 }

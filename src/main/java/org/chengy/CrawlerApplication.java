@@ -16,19 +16,16 @@ public class CrawlerApplication implements CommandLineRunner {
 	Crawler163music crawler163music;
 
 
-
-
 	public static void main(String[] args) {
 		SpringApplication.run(CrawlerApplication.class, args);
 
 	}
 
 	public void run(String... var1) throws Exception {
-	//	launcher.saveMusic163SongByUser();
-
+//		launcher.saveMusic163SongByUser();
+//
 //		launcher.crawlMusic163User();
-
-
+        launcher.getSongRecordInfo();
 	}
 
 }

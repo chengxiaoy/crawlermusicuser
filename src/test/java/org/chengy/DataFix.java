@@ -1,5 +1,6 @@
 package org.chengy;
 
+import org.chengy.service.statistics.Music163Statistics;
 import org.chengy.util.FixCrawlerData;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,10 +16,20 @@ import org.springframework.test.context.junit4.SpringRunner;
 public class DataFix {
 	@Autowired
 	FixCrawlerData fixCrawlerData;
+	@Autowired
+	Music163Statistics music163Statistics;
 
 	@Test
 	public void fixCrawlerUserInfoTest() {
 		fixCrawlerData.fixCrawlerUserInfoforDuplicate();
 	}
+
+	@Test
+	public void getIdfTest() {
+		double d =
+				music163Statistics.calculateIDF((long) 4892, (long) 40);
+		System.out.println(d);
+	}
+
 
 }
