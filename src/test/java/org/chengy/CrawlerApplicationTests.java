@@ -1,5 +1,6 @@
 package org.chengy;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,10 +10,13 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 import org.chengy.infrastructure.music163secret.EncryptTools;
 import org.chengy.infrastructure.music163secret.Music163ApiCons;
 import org.chengy.model.Song;
+import org.chengy.model.SongRecord;
 import org.chengy.model.User;
+import org.chengy.repository.SongRecordRepository;
 import org.chengy.repository.SongRepository;
 import org.chengy.repository.UserRepository;
 import org.chengy.service.crawler.Crawler163music;
+import org.chengy.service.discovery.Music163Discovery;
 import org.chengy.service.statistics.Music163Statistics;
 import org.json.JSONArray;
 import org.jsoup.nodes.Document;
@@ -24,6 +28,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.awt.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -49,14 +54,10 @@ public class CrawlerApplicationTests {
 	@Autowired
 	UserRepository userRepository;
 
-	@Test
-	public void getRelativedSong() throws Exception {
-		Map<String, Double> relativeSongmap =
-				music163Statistics.getUserRelativeSong("330313", "10");
-		List<Song> songList = songRepository.findSongsByCommunityIdInAndCommunity(new ArrayList<>(relativeSongmap.keySet()), Music163ApiCons.communityName);
-		System.out.println(songList.stream().map(ob -> ob.getTitle()).collect(Collectors.toList()));
-
-	}
+	@Autowired
+	SongRecordRepository songRecordRepository;
+	@Autowired
+	Music163Discovery music163Discovery;
 
 
 	@Test
@@ -65,7 +66,7 @@ public class CrawlerApplicationTests {
 
 	@Test
 	public void getUserInfoTest() {
-		crawler163music.getUserInfo("73005221");
+		crawler163music.getUserInfo("625356566");
 	}
 
 	@Test
@@ -110,11 +111,26 @@ public class CrawlerApplicationTests {
 	}
 
 	@Test
-	public void getRelativedUser() throws IOException {
+	public void getRelativedUser() throws Exception {
 
-		music163Statistics.relativedUser("330313");
+		music163Discovery.relativedUser("330313");
 	}
 
+	@Test
+	public void getDiscoverySong() throws Exception {
+		List<Song> songList = music163Discovery.getDiscoverySong("250038717");
+
+		System.out.println(songList.stream().map(ob -> ob.getTitle() + showArts(ob.getArts())).collect(Collectors.toList()));
+	}
+
+
+	public String showArts(List<String> arts) {
+		String str = "";
+		for (String s : arts) {
+			str = str + " "+s + " ";
+		}
+		return str;
+	}
 
 	@Test
 	public void getMostPopLyricistTest() throws IOException, IllegalAccessException {
@@ -141,13 +157,44 @@ public class CrawlerApplicationTests {
 	@Test
 	public void getRelativeSong() {
 		try {
-			Map<String, Double> score = music163Statistics.getUserRelativeSong("252839335", "10");
+			Map<String, Double> score = music163Statistics.getRelativeSongByAlldata("330313", 20);
 			List<Song> songList = songRepository.findSongsByCommunityIdInAndCommunity(new ArrayList<>(score.keySet()), Music163ApiCons.communityName);
 			System.out.println(songList.stream().map(ob -> ob.getTitle()).collect(Collectors.toList()));
+
+			List<SongRecord> songRecordList = songRecordRepository.findSongRecordsByCommunityIdInAndCommunity(songList.stream().map(ob -> ob.getCommunityId()).collect(Collectors.toList()), Music163ApiCons.communityName);
+
+
+			score = music163Statistics.getRelativeSongByWeekdata("330313", 10);
+			songList = songRepository.findSongsByCommunityIdInAndCommunity(new ArrayList<>(score.keySet()), Music163ApiCons.communityName);
+			System.out.println(songList.stream().map(ob -> ob.getTitle()).collect(Collectors.toList()));
+
+			songRecordList = songRecordRepository.findSongRecordsByCommunityIdInAndCommunity(songList.stream().map(ob -> ob.getCommunityId()).collect(Collectors.toList()), Music163ApiCons.communityName);
+
 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	@Test
+	public void getWeekSong() throws Exception {
+		String uid = "330313";
+		String songRecordParam = Music163ApiCons.getSongRecordofWeek(uid, 1, 100);
+		Document document = EncryptTools.commentAPI(songRecordParam, Music163ApiCons.songRecordUrl);
+
+		String jsonStr = document.text();
+		ObjectMapper objectMapper = new ObjectMapper();
+		JsonNode jsonNode = objectMapper.readTree(jsonStr);
+		List<HashMap<String, Object>> hashMapList
+				= objectMapper.readValue(jsonNode.findValue("weekData").toString(),
+				new TypeReference<List<HashMap<String, Object>>>() {
+				});
+
+		Map<String, Integer> recordInfo =
+				hashMapList.stream().collect(Collectors.toMap(ob -> (((HashMap) ob.get("song")).get("id")).toString(), ob -> (Integer) ob.get("score")));
+
+		System.out.println(recordInfo);
+
 	}
 
 

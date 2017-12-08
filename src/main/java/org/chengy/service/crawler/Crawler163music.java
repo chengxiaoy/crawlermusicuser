@@ -59,13 +59,13 @@ public class Crawler163music {
 				String html = HttpHelper.get(Music163ApiCons.Music163UserHost + id);
 				Document document = Jsoup.parse(html);
 				//性别
-				boolean ismale=document.select("#j-name-wrap > i").hasClass("u-icn-01");
-				boolean isfemale=document.select("#j-name-wrap > i").hasClass("u-icn-02");
-				int gender=0;
-				if (ismale){
-					gender=1;
-				}else if(isfemale){
-					gender=2;
+				boolean ismale = document.select("#j-name-wrap > i").hasClass("u-icn-01");
+				boolean isfemale = document.select("#j-name-wrap > i").hasClass("u-icn-02");
+				int gender = 0;
+				if (ismale) {
+					gender = 1;
+				} else if (isfemale) {
+					gender = 2;
 				}
 
 				String name = document.select("#j-name-wrap > span.tit.f-ff2.s-fc0.f-thide").get(0).html();
@@ -88,7 +88,7 @@ public class Crawler163music {
 				if (elements.size() > 0) {
 					try {
 						area = elements.get(0).html().split("：")[1];
-					}catch (Exception e){
+					} catch (Exception e) {
 
 						elements = document.select("#head-box > dd > div:nth-child(3) > span:nth-child(1)");
 						area = elements.get(0).html().split("：")[1];
@@ -163,6 +163,7 @@ public class Crawler163music {
 
 	/**
 	 * 获取用户最近在听的歌曲
+	 *
 	 * @param uid 用户id
 	 * @throws Exception
 	 */
@@ -246,6 +247,20 @@ public class Crawler163music {
 		return document.text();
 	}
 
+	/**
+	 * 获取某个用户总共听过多少歌
+	 * @param uid
+	 * @return
+	 * @throws Exception
+	 */
+	public int getRecordSongNum(String uid) throws Exception {
+
+		String html = HttpHelper.get(Music163ApiCons.Music163UserHost + uid);
+		Document document = Jsoup.parse(html);
+		String songNums =
+				document.select("#rHeader > h4").get(0).html();
+		return Integer.parseInt(songNums.substring(4,songNums.length()-1));
+	}
 
 	public static void main(String[] args) throws Exception {
 

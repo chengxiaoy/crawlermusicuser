@@ -18,6 +18,7 @@ import org.chengy.model.User;
 import org.chengy.repository.SongRecordRepository;
 import org.chengy.repository.SongRepository;
 import org.chengy.repository.UserRepository;
+import org.chengy.service.crawler.Crawler163music;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +47,9 @@ public class Music163Statistics {
 	SongRepository songRepository;
 	@Autowired
 	SongRecordRepository songRecordRepository;
+	@Autowired
+	ObjectMapper objectMapper;
+
 
 
 	/**
@@ -183,105 +187,14 @@ public class Music163Statistics {
 
 	}
 
-	/**
-	 * 随机读取1000个人 根据歌曲获取相关度较高的人
-	 * 获取相关度较高的用户
-	 *
-	 * @param userId
-	 * @throws IOException
-	 */
-	public void relativedUser(String userId) throws IOException {
-
-		User user = userRepository.findByCommunityIdAndCommunity(userId, Music163ApiCons.communityName);
-
-		String filename = "datafile/sameUserfor" + user.getUsername() + ".txt";
-		File file = new File(filename);
-		file.createNewFile();
 
 
-		List<String> songList = user.getLoveSongId();
-		Random random = new Random();
-		int pageIndex = random.nextInt(210);
-		System.out.println("===========" + pageIndex);
-		int pageSize = 1000;
-		List<User> userList = userRepository.findAll(new PageRequest(pageIndex, pageSize)).getContent();
-		Map<String, Integer> userIdInfo = new HashMap<>();
-		Map<String, List<String>> userSongInfo = new HashMap<>();
 
-		for (User other : userList) {
-			List<String> userSongs = other.getLoveSongId();
-			userIdInfo.put(other.getCommunityId(), getIntersectionNum(songList, userSongs));
-			userSongInfo.put(other.getCommunityId(), userSongs);
-		}
-
-		List<Map.Entry<String, Integer>> entries =
-				userIdInfo.entrySet().stream().sorted((ob1, ob2) -> -(ob1.getValue() - ob2.getValue())).collect(Collectors.toList());
-
-
-		List<String> relativeUser = new ArrayList<>();
-		int i = 0;
-		for (Map.Entry<String, Integer> entry : entries) {
-			relativeUser.add(entry.getKey());
-			i++;
-			if (i == 20) {
-				break;
-			}
-		}
-
-		List<User> relativeUserList = userRepository.findUsersByCommunityIdInAndCommunity(relativeUser, Music163ApiCons.communityName);
-
-		try (FileWriter fileWriter = new FileWriter(file)) {
-			for (User item : relativeUserList) {
-				fileWriter.write(item.getUsername());
-				fileWriter.write("\t");
-				String communityId = item.getCommunityId();
-				fileWriter.write(communityId);
-				fileWriter.write("\t");
-				List<Song> relativeSong = songRepository.findSongsByCommunityIdInAndCommunity(userSongInfo.get(item.getCommunityId()), Music163ApiCons.communityName);
-				for (Song song : relativeSong) {
-					fileWriter.write(song.getTitle());
-					fileWriter.write("\t");
-				}
-				fileWriter.write("\n");
-			}
-		}
-	}
-
-	/**
-	 * 获取歌曲的交集
-	 *
-	 * @param idList1
-	 * @param idList2
-	 * @return
-	 */
-	int getIntersectionNum(List<String> idList1, List<String> idList2) {
-		int i = 0;
-		List<String> intersection = new ArrayList<>();
-		HashSet<String> set = new HashSet<>(idList1);
-		for (String id : idList2) {
-			if (set.contains(id)) {
-				i++;
-				intersection.add(id);
-			}
-		}
-		idList2.clear();
-		idList2.addAll(intersection);
-		return i;
-	}
-
-
-	/**
-	 * 根据TF-IDF原理获取用户k条最具代表性的歌曲
-	 *
-	 * @param userid 用户id
-	 * @param k      k条
-	 */
-	public Map<String, Double> getUserRelativeSong(String userid, String k) throws Exception {
-
+	public Map<String, Double> getRelativeSongByAlldata(String userid, int k) throws Exception {
+		//总时间的喜欢的歌曲
 		String songRecordParam = Music163ApiCons.getSongRecordALLParams(userid, 1, 100);
 		Document document = EncryptTools.commentAPI(songRecordParam, Music163ApiCons.songRecordUrl);
 		String jsonStr = document.text();
-		ObjectMapper objectMapper = new ObjectMapper();
 		JsonNode jsonNode = objectMapper.readTree(jsonStr);
 		List<HashMap<String, Object>> hashMapList
 				= objectMapper.readValue(jsonNode.findValue("allData").toString(),
@@ -290,6 +203,31 @@ public class Music163Statistics {
 
 		Map<String, Integer> recordInfo =
 				hashMapList.stream().collect(Collectors.toMap(ob -> (((HashMap) ob.get("song")).get("id")).toString(), ob -> (Integer) ob.get("score")));
+
+		return getUserRelativeSong(recordInfo, k);
+	}
+
+	public Map<String, Double> getRelativeSongByWeekdata(String userid, int k) throws Exception {
+//最近一周听的歌曲
+		String weekSongRecordParam = Music163ApiCons.getSongRecordofWeek(userid, 1, 100);
+		Document document = EncryptTools.commentAPI(weekSongRecordParam, Music163ApiCons.songRecordUrl);
+
+		String jsonStr = document.text();
+		JsonNode jsonNode = objectMapper.readTree(jsonStr);
+		List<HashMap<String, Object>> hashMapList
+				= objectMapper.readValue(jsonNode.findValue("weekData").toString(),
+				new TypeReference<List<HashMap<String, Object>>>() {
+				});
+
+		Map<String, Integer> weekRecordInfo =
+				hashMapList.stream().collect(Collectors.toMap(ob -> (((HashMap) ob.get("song")).get("id")).toString(), ob -> (Integer) ob.get("score")));
+		return getUserRelativeSong(weekRecordInfo, k);
+	}
+
+	/**
+	 * 根据TF-IDF原理获取用户k条最具代表性的歌曲
+	 */
+	public Map<String, Double> getUserRelativeSong(Map<String, Integer> recordInfo, int k) throws Exception {
 
 
 		long alldata =
@@ -312,7 +250,7 @@ public class Music163Statistics {
 						return 1;
 					}
 					return -1;
-				}).limit((Long.parseLong(k))).collect(Collectors.toMap(ob1 -> ob1.getKey(), ob2 -> ob2.getValue()));
+				}).limit(k).collect(Collectors.toMap(ob1 -> ob1.getKey(), ob2 -> ob2.getValue()));
 
 		return relativeSong;
 	}
@@ -359,14 +297,14 @@ public class Music163Statistics {
 				SongRecord newSongRecord = SongRecordFactory.buildSongRecord(entry.getKey(), Music163ApiCons.communityName, 1, (long) entry.getValue());
 				songRecordRepository.save(newSongRecord);
 			} else {
-				try{
+				try {
 					songRecord.setScore(songRecord.getScore() + entry.getValue());
 					songRecord.setLoveNum(songRecord.getLoveNum() + 1);
 					songRecordRepository.save(songRecord);
-				}catch (OptimisticLockingFailureException e){
+				} catch (OptimisticLockingFailureException e) {
 					System.out.println("retry update songRecord");
 
-					songRecord=songRecordRepository.findSongRecordByCommunityIdAndCommunity(songRecord.getCommunityId(), Music163ApiCons.communityName);
+					songRecord = songRecordRepository.findSongRecordByCommunityIdAndCommunity(songRecord.getCommunityId(), Music163ApiCons.communityName);
 					songRecord.setScore(songRecord.getScore() + entry.getValue());
 					songRecord.setLoveNum(songRecord.getLoveNum() + 1);
 					songRecordRepository.save(songRecord);
