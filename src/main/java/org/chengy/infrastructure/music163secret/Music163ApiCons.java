@@ -36,7 +36,9 @@ public class Music163ApiCons {
 	public static final String lyricUrl = "https://music.163.com/weapi/song/lyric?csrf_token=";
 
 
+	public static final String playListUrl = "http://music.163.com/weapi/user/playlist?csrf_token=";
 
+	public static final String playListDetailUrl = "http://music.163.com/weapi/v3/playlist/detail?csrf_token=";
 
 	public static String getFansParams(String uid, int pageIndex, int pageSize) throws JsonProcessingException {
 		ObjectMapper objectMapper = new ObjectMapper();
@@ -67,7 +69,7 @@ public class Music163ApiCons {
 
 	}
 
-	public static String getSongRecordofWeek(String uid,int pageIndex,int pageSize) throws JsonProcessingException {
+	public static String getSongRecordofWeek(String uid, int pageIndex, int pageSize) throws JsonProcessingException {
 		ObjectMapper objectMapper = new ObjectMapper();
 		String offset = String.valueOf((pageIndex - 1) * pageSize);
 		return objectMapper.writeValueAsString(new Music163ApiCons().new LoveSongParamWeek(uid, offset, "true", String.valueOf(pageSize), ""));
@@ -81,20 +83,159 @@ public class Music163ApiCons {
 
 	}
 
+	public static String getPlayListParams(String uid, int pageIndex, int pageSize) throws JsonProcessingException {
+		ObjectMapper objectMapper = new ObjectMapper();
+		String offset = String.valueOf((pageIndex - 1) * pageSize);
+		return objectMapper.writeValueAsString(new Music163ApiCons().new PlaylistParam(uid, offset, String.valueOf(pageSize), ""));
+
+	}
+
+	public static String getPlayListDetailParam(String id, int pageIndex, int pageSize) throws JsonProcessingException {
+		ObjectMapper objectMapper = new ObjectMapper();
+		String offset = String.valueOf((pageIndex - 1) * pageSize);
+		return objectMapper.writeValueAsString(new Music163ApiCons().
+				new PlayListDetailParam(id, offset, "true", String.valueOf(pageSize),
+				String.valueOf(pageSize), ""));
+	}
+
+
+	class PlayListDetailParam {
+		private String id;
+		private String offset;
+		private String total;
+		private String limit;
+		private String n;
+		private String csrf_token;
+
+		public PlayListDetailParam(String id, String offset, String total, String limit, String n, String csrf_token) {
+			this.id = id;
+			this.offset = offset;
+			this.total = total;
+			this.limit = limit;
+			this.n = n;
+			this.csrf_token = csrf_token;
+		}
+
+
+
+
+		public String getOffset() {
+			return offset;
+		}
+
+		public void setOffset(String offset) {
+			this.offset = offset;
+		}
+
+		public String getTotal() {
+			return total;
+		}
+
+		public void setTotal(String total) {
+			this.total = total;
+		}
+
+		public String getLimit() {
+			return limit;
+		}
+
+		public void setLimit(String limit) {
+			this.limit = limit;
+		}
+
+		public String getN() {
+			return n;
+		}
+
+		public void setN(String n) {
+			this.n = n;
+		}
+
+		public String getCsrf_token() {
+			return csrf_token;
+		}
+
+		public void setCsrf_token(String csrf_token) {
+			this.csrf_token = csrf_token;
+		}
+
+
+		public String getId() {
+			return id;
+		}
+
+		public void setId(String id) {
+			this.id = id;
+		}
+	}
+
+	/**
+	 * 获取歌单
+	 */
+	class PlaylistParam {
+		private String uid;
+		private String offset;
+		private String limit;
+		private String csrf_token;
+
+
+		public PlaylistParam(String uid, String offset, String limit, String csrf_token) {
+			this.uid = uid;
+			this.offset = offset;
+			this.limit = limit;
+			this.csrf_token = csrf_token;
+		}
+
+
+		public String getUid() {
+			return uid;
+		}
+
+		public void setUid(String uid) {
+			this.uid = uid;
+		}
+
+		public String getOffset() {
+			return offset;
+		}
+
+		public void setOffset(String offset) {
+			this.offset = offset;
+		}
+
+		public String getLimit() {
+			return limit;
+		}
+
+		public void setLimit(String limit) {
+			this.limit = limit;
+		}
+
+		public String getCsrf_token() {
+			return csrf_token;
+		}
+
+		public void setCsrf_token(String csrf_token) {
+			this.csrf_token = csrf_token;
+		}
+
+
+	}
+
 	/**
 	 * 请求歌词的参数内部类
 	 */
-	class LyricParam{
+	class LyricParam {
 		private String id;
 		private Integer lv;
 		private Integer tv;
 		private String csrf_token;
 
-		public LyricParam(String songId){
-			this.id=songId;
-			lv=-1;
-			tv=-1;
-			csrf_token="";
+		public LyricParam(String songId) {
+			this.id = songId;
+			lv = -1;
+			tv = -1;
+			csrf_token = "";
 		}
 
 		public String getId() {

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.sun.tools.corba.se.idl.StringGen;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.chengy.infrastructure.music163secret.EncryptTools;
 import org.chengy.infrastructure.music163secret.Music163ApiCons;
@@ -66,14 +67,34 @@ public class CrawlerApplicationTests {
 
 	@Test
 	public void getUserInfoTest() {
-		crawler163music.getUserInfo("625356566");
+		crawler163music.getUserInfo("250038717");
 	}
 
 	@Test
 	public void getUserRencentSongTest() throws Exception {
-		crawler163music.getUserRecentSong("330313");
+		crawler163music.getUserRecentSong("250038717");
 
 	}
+
+	@Test
+	public void getPlayList() throws Exception {
+		String playListParams = Music163ApiCons.getPlayListParams("250038717", 1, 10);
+		Document document = EncryptTools.commentAPI(playListParams, Music163ApiCons.playListUrl);
+
+		String json=document.text();
+		ObjectMapper objectMapper=new ObjectMapper();
+		JsonNode jsonNode=objectMapper.readTree(json);
+		List<JsonNode> jsonNodeList=jsonNode.findValue("playlist").findValues("id");
+		String playListid=String.valueOf(jsonNodeList.get(0).asInt());
+		System.out.println(playListid);
+
+		String playDetail=Music163ApiCons.getPlayListDetailParam(playListid, 1, 10);
+		document=EncryptTools.commentAPI(playDetail,Music163ApiCons.playListDetailUrl);
+
+		System.out.println(document);
+
+	}
+
 
 	@Test
 	public void testCompoundIndex() {
@@ -118,7 +139,7 @@ public class CrawlerApplicationTests {
 
 	@Test
 	public void getDiscoverySong() throws Exception {
-		List<Song> songList = music163Discovery.getDiscoverySong("250038717");
+		List<Song> songList = music163Discovery.getDiscoverySong("330313");
 
 		System.out.println(songList.stream().map(ob -> ob.getTitle() + showArts(ob.getArts())).collect(Collectors.toList()));
 	}
@@ -127,7 +148,7 @@ public class CrawlerApplicationTests {
 	public String showArts(List<String> arts) {
 		String str = "";
 		for (String s : arts) {
-			str = str + " "+s + " ";
+			str = str + " " + s + " ";
 		}
 		return str;
 	}

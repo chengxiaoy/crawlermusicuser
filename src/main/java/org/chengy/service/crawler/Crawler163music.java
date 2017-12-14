@@ -167,17 +167,16 @@ public class Crawler163music {
 	 * @param uid 用户id
 	 * @throws Exception
 	 */
-	public void getUserRecentSong(String uid) throws Exception {
+	public List<String> getUserRecentSong(String uid) throws Exception {
 		List<String> songIds = new ArrayList<>();
 
-		String songRecordWeek = Music163ApiCons.getSongRecordofWeek(uid, 1, 10);
+		String songRecordWeek = Music163ApiCons.getSongRecordofWeek(uid, 1, 100);
 		Document document = EncryptTools.commentAPI(songRecordWeek, Music163ApiCons.songRecordUrl);
 		JsonNode root = objectMapper.readTree(document.text());
 		songIds =
 				root.findValue("weekData").findValues("song").stream()
 						.map(ob -> ob.get("id").asText()).collect(Collectors.toList());
-		System.out.println(songIds);
-
+		return songIds;
 	}
 
 	public void getSongInfo(String songId) throws Exception {

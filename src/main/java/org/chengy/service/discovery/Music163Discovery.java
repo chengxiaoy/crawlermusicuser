@@ -43,14 +43,16 @@ public class Music163Discovery {
 		List<User> relativedUser = relativedUser(uid);
 
 		List<String> songidList = relativedUser.stream().map(ob -> ob.getLoveSongId().get(0)).collect(Collectors.toList());
-		User user=userRepository.findByCommunityIdAndCommunity(uid,Music163ApiCons.communityName);
-		if (user!=null){
+		User user = userRepository.findByCommunityIdAndCommunity(uid, Music163ApiCons.communityName);
+		if (user != null) {
 			songidList.removeAll(user.getLoveSongId());
 		}
+		List<String> recentSongids = crawler163music.getUserRecentSong(uid);
+		songidList.removeAll(recentSongids);
 
-		List<SongRecord> songRecordList=songRecordRepository.findSongRecordsByCommunityIdInAndCommunity(songidList,Music163ApiCons.communityName);
-		songidList=songRecordList.stream().sorted((ob1,ob2)->(ob1.getLoveNum()-ob2.getLoveNum())).limit(5).map(ob->ob.getCommunityId()).collect(Collectors.toList());
-		return songRepository.findSongsByCommunityIdInAndCommunity(songidList,Music163ApiCons.communityName);
+		List<SongRecord> songRecordList = songRecordRepository.findSongRecordsByCommunityIdInAndCommunity(songidList, Music163ApiCons.communityName);
+		songidList = songRecordList.stream().sorted((ob1, ob2) -> (-ob1.getLoveNum() + ob2.getLoveNum())).limit(5).map(ob -> ob.getCommunityId()).collect(Collectors.toList());
+		return songRepository.findSongsByCommunityIdInAndCommunity(songidList, Music163ApiCons.communityName);
 	}
 
 	/**
@@ -62,7 +64,7 @@ public class Music163Discovery {
 	 */
 	public List<User> relativedUser(String userId) throws Exception {
 
-	//	User user = userRepository.findByCommunityIdAndCommunity(userId, Music163ApiCons.communityName);
+		//	User user = userRepository.findByCommunityIdAndCommunity(userId, Music163ApiCons.communityName);
 
 		String filename = "datafile/sameUserfor" + userId + ".txt";
 		File file = new File(filename);
