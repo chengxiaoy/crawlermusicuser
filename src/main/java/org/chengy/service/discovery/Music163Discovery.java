@@ -51,8 +51,11 @@ public class Music163Discovery {
 		songidList.removeAll(recentSongids);
 
 		List<SongRecord> songRecordList = songRecordRepository.findSongRecordsByCommunityIdInAndCommunity(songidList, Music163ApiCons.communityName);
-		songidList = songRecordList.stream().sorted((ob1, ob2) -> (-ob1.getLoveNum() + ob2.getLoveNum())).limit(5).map(ob -> ob.getCommunityId()).collect(Collectors.toList());
-		return songRepository.findSongsByCommunityIdInAndCommunity(songidList, Music163ApiCons.communityName);
+		songidList = songRecordList.stream().filter(ob->ob.getLoveNum()<300).sorted((ob1, ob2) -> (-ob1.getLoveNum() + ob2.getLoveNum())).limit(10).map(ob -> ob.getCommunityId()).collect(Collectors.toList());
+		List<Song> songList = songRepository.findSongsByCommunityIdInAndCommunity(songidList, Music163ApiCons.communityName);
+
+		return songList;
+
 	}
 
 	/**
@@ -73,7 +76,7 @@ public class Music163Discovery {
 
 		//List<String> songList = user.getLoveSongId();
 		List<String> songList = new ArrayList<>(music163Statistics.getRelativeSongByAlldata(userId, 20).keySet());
-		songList.addAll(music163Statistics.getRelativeSongByWeekdata(userId, 10).keySet());
+		//	songList.addAll(music163Statistics.getRelativeSongByWeekdata(userId, 10).keySet());
 
 
 		Random random = new Random();
@@ -146,4 +149,46 @@ public class Music163Discovery {
 		idList2.addAll(intersection);
 		return i;
 	}
+
+
+	public void getSongInfo(List<Song> songList) throws IOException {
+
+
+		Map<String, Song> songMap = songList.stream().collect(Collectors.toMap(ob -> ob.getCommunityId(), ob1 -> ob1));
+
+
+		List<SongRecord> songRecordList =
+				songRecordRepository.findSongRecordsByCommunityIdInAndCommunity(songMap.keySet(), Music163ApiCons.communityName);
+
+		songRecordList = songRecordList.stream()
+				.sorted((ob1, ob2) -> -(int) (ob1.getScore() / ob1.getLoveNum() - ob2.getScore() / ob2.getLoveNum()))
+				.collect(Collectors.toList());
+
+		File file = new File("datafile/topicSong.txt");
+
+		if (!file.getParentFile().exists()) {
+			file.getParentFile().mkdirs();
+		}
+		if (!file.exists()) {
+			file.createNewFile();
+		}
+
+
+		FileWriter fileWriter = new FileWriter(file);
+
+		for (SongRecord songRecord : songRecordList) {
+
+			Song song = songMap.get(songRecord.getCommunityId());
+
+			fileWriter.write(song.getTitle() + "\t" + song.getArts().get(0));
+			if (songRecord != null) {
+				fileWriter.write("\t" + songRecord.getLoveNum() + "\t" + songRecord.getScore() + "\t" + songRecord.getScore() / songRecord.getLoveNum());
+			}
+			fileWriter.write("\n");
+		}
+
+		fileWriter.close();
+	}
+
+
 }
