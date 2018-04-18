@@ -6,6 +6,7 @@ import org.chengy.infrastructure.music163secret.Music163ApiCons;
 import org.chengy.model.User;
 import org.chengy.repository.SongRepository;
 import org.chengy.repository.UserRepository;
+import org.chengy.service.crawler.music163.Crawler163music;
 import org.chengy.service.statistics.Music163Statistics;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -16,7 +17,6 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
 
 /**

@@ -1,12 +1,8 @@
 package org.chengy.service.statistics;
 
-import ch.qos.logback.core.joran.util.beans.BeanUtil;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.sun.org.apache.bcel.internal.generic.NEW;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.chengy.infrastructure.music163secret.EncryptTools;
 import org.chengy.infrastructure.music163secret.Music163ApiCons;
@@ -18,14 +14,10 @@ import org.chengy.model.User;
 import org.chengy.repository.SongRecordRepository;
 import org.chengy.repository.SongRepository;
 import org.chengy.repository.UserRepository;
-import org.chengy.service.crawler.Crawler163music;
 import org.jsoup.nodes.Document;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import java.io.*;

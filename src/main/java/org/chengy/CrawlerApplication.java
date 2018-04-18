@@ -1,6 +1,6 @@
 package org.chengy;
 
-import org.chengy.service.crawler.Crawler163music;
+import org.chengy.service.crawler.music163.Crawler163music;
 import org.chengy.service.crawler.CrawlerLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
