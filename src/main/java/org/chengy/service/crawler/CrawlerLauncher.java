@@ -15,6 +15,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -86,7 +87,7 @@ public class CrawlerLauncher {
 							String communityId = (String) strItr.next();
 							User user = userRepository.findByCommunityIdAndCommunity(communityId, Music163ApiCons.communityName);
 							userRepository.delete(user);
-							crawler163music.getUserInfo(communityId);
+							crawler163music.getUserInfo(Arrays.asList(communityId));
 						}
 					});
 					thread.start();
@@ -99,7 +100,7 @@ public class CrawlerLauncher {
 				new Thread(new Runnable() {
 					@Override
 					public void run() {
-						crawler163music.getUserInfo(CrawlerBizConfig.getCrawlerUserSeed());
+						crawler163music.getUserInfo(CrawlerBizConfig.getCrawlerUserSeeds());
 
 					}
 				}).start();

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.Consts;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -61,7 +63,8 @@ public class EncryptTools {
 		return result;
 	}
 
-	public static Document commentAPI(String text, String url) throws Exception {
+	public static Pair<String,String> encryptCommonAPI(String text) throws Exception {
+
 		//私钥，随机16位字符串（自己可改）
 		String secKey = "cd859f54539b24b7";
 		String modulus = "00e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b725152b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ecbda92557c93870114af6c9d05c4f7f0c3685b7a46bee255932575cce10b424d813cfe4875d3e82047b97ddef52741d546b8e289dc6935b3ece0462db0a22b8e7";
@@ -81,6 +84,15 @@ public class EncryptTools {
 		String encSecKey = Hex.encodeHexString(bigInteger4.toByteArray());
 		//字符填充
 		encSecKey = EncryptTools.zfill(encSecKey, 256);
+
+		return new ImmutablePair<>(params,encSecKey);
+	}
+
+
+	public static Document commentAPI(String text, String url) throws Exception {
+		Pair<String,String> pair = encryptCommonAPI(text);
+		String params = pair.getLeft();
+		String encSecKey = pair.getRight();
 		CloseableHttpClient httpClient = HttpHelper.client();
 
 		HttpPost post = new HttpPost(url);

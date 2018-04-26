@@ -22,10 +22,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RunWith(SpringRunner.class)
@@ -55,7 +52,7 @@ public class CrawlerApplicationTests {
 
 	@Test
 	public void getUserInfoTest() {
-		crawler163music.getUserInfo("250038717");
+		crawler163music.getUserInfo(Arrays.asList("250038717"));
 	}
 
 	@Test

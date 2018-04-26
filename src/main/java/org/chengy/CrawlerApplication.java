@@ -2,6 +2,7 @@ package org.chengy;
 
 import org.chengy.service.crawler.music163.Crawler163music;
 import org.chengy.service.crawler.CrawlerLauncher;
+import org.chengy.service.crawler.music163.Vertx163Muisc;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -14,6 +15,8 @@ public class CrawlerApplication implements CommandLineRunner {
 	CrawlerLauncher launcher;
 	@Autowired
 	Crawler163music crawler163music;
+	@Autowired
+	Vertx163Muisc vertx163Muisc;
 
 
 	public static void main(String[] args) {
@@ -26,6 +29,7 @@ public class CrawlerApplication implements CommandLineRunner {
 //
 //		launcher.crawlMusic163User();
 		//launcher.getSongRecordInfo();
+		vertx163Muisc.crawlUser();
 	}
 
 }

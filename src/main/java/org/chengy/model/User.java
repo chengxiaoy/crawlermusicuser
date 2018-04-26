@@ -1,5 +1,6 @@
 package org.chengy.model;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
@@ -34,6 +35,7 @@ public class User extends BaseEntity {
 
 	private List<String> loveSongId;
 
+	private List<Pair<String,Integer>> songScore;
 
 	public String getUsername() {
 		return username;
@@ -105,4 +107,12 @@ public class User extends BaseEntity {
 	public void setSongRecord(Boolean songRecord) {
 		this.songRecord = songRecord;
 	}
+
+    public List<Pair<String, Integer>> getSongScore() {
+        return songScore;
+    }
+
+    public void setSongScore(List<Pair<String, Integer>> songScore) {
+        this.songScore = songScore;
+    }
 }

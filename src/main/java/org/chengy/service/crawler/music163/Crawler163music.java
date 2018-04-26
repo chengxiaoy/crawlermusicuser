@@ -38,9 +38,9 @@ public class Crawler163music {
 	@Autowired
 	MongoTemplate mongoTemplate;
 
-	public void getUserInfo(String startId) {
+	public void getUserInfo(List<String> startIds) {
 		LinkedList<String> ids = new LinkedList<>();
-		ids.add(startId);
+		ids.addAll(startIds);
 		while (ids.size() > 0) {
 			try {
 				String id = ids.peek();
