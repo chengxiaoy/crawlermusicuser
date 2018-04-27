@@ -3,6 +3,7 @@ package org.chengy.infrastructure.music163secret;
 
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
+import io.vertx.core.impl.ConcurrentHashSet;
 import org.chengy.model.User;
 import org.chengy.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +14,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.nio.charset.Charset;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,6 +22,7 @@ public class Music163BloomFilter {
 
     private BloomFilter<Integer> userBloomFilter;
 
+    private ConcurrentHashSet<Integer> hashSet = new ConcurrentHashSet<>();
 
     @Autowired
     UserRepository userRepository;
@@ -33,7 +34,7 @@ public class Music163BloomFilter {
     public void init() {
         userBloomFilter = BloomFilter.create(Funnels.integerFunnel(), expectInsertions);
         loadDbData();
-        System.out.println("init BloomFilter success");
+        System.out.println("init filter success");
     }
 
 
@@ -44,13 +45,12 @@ public class Music163BloomFilter {
         User user = new User();
         user.setCommunity(Music163ApiCons.communityName);
         Example<User> userExample = Example.of(user, ExampleMatcher.matching().withMatcher("community",
-                match -> match.caseSensitive().exact()).withIgnorePaths("id","gender").withIgnoreNullValues());
+                match -> match.caseSensitive().exact()).withIgnorePaths("id", "gender").withIgnoreNullValues());
         List<Integer> uids = userRepository.findAll(userExample, new PageRequest(pageId++, pageSize)).getContent()
                 .stream().map(ob -> Integer.valueOf(ob.getCommunityId())).collect(Collectors.toList());
         while (uids.size() > 0) {
-            for (Integer uid : uids) {
-                userBloomFilter.put(uid);
-            }
+            //userBloomFilter.put(uid);
+            hashSet.addAll(uids);
             uids = userRepository.findAll(userExample, new PageRequest(pageId++, pageSize)).getContent()
                     .stream().map(ob -> Integer.valueOf(ob.getCommunityId())).collect(Collectors.toList());
         }
@@ -59,10 +59,10 @@ public class Music163BloomFilter {
 
 
     public boolean containsUid(Integer uid) {
-        return userBloomFilter.mightContain(uid);
+        return hashSet.contains(uid);
     }
 
     public boolean putUid(Integer uid) {
-        return userBloomFilter.put(uid);
+        return hashSet.add(uid);
     }
 }

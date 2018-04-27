@@ -9,6 +9,7 @@ import org.chengy.repository.UserRepository;
 import org.chengy.service.crawler.music163.Crawler163music;
 import org.chengy.service.statistics.Music163Statistics;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -34,6 +35,7 @@ public class CrawlerLauncher {
 	@Autowired
 	Music163Statistics music163Statistics;
 	@Autowired
+	@Qualifier("songExecutor")
 	ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
 	public void saveMusic163SongByUser() {

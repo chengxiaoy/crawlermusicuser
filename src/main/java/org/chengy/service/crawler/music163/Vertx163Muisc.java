@@ -6,6 +6,7 @@ import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.net.ProxyOptions;
 import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
@@ -14,16 +15,17 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.chengy.configuration.CrawlerBizConfig;
-import org.chengy.infrastructure.music163secret.EncryptTools;
-import org.chengy.infrastructure.music163secret.Music163ApiCons;
-import org.chengy.infrastructure.music163secret.Music163BloomFilter;
-import org.chengy.infrastructure.music163secret.UserFactory;
+import org.chengy.core.HttpHelper;
+import org.chengy.infrastructure.music163secret.*;
+import org.chengy.model.Song;
 import org.chengy.model.User;
+import org.chengy.repository.SongRepository;
 import org.chengy.repository.UserRepository;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
@@ -47,25 +49,29 @@ public class Vertx163Muisc {
     private UserRepository userRepository;
 
     @Autowired
+    private SongRepository songRepository;
+
+    @Autowired
     Music163BloomFilter bloomFilter;
 
-    private static WebClient webClient;
     @Autowired
+    VertxClientFactory vertxClientFactory;
+
+    private ThreadLocal<WebClient> clientThreadLocal = ThreadLocal.withInitial(() -> {
+        return vertxClientFactory.newWebClient();
+    });
+
+
+    @Autowired
+    @Qualifier("userExecutor")
     ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
     ExecutorService executorService = Executors.newFixedThreadPool(3);
 
-    static {
-        Vertx vertx = Vertx.vertx();
-        WebClientOptions webClientOptions = new WebClientOptions();
-        webClientOptions.setMaxPoolSize(50).setConnectTimeout(1000).setKeepAlive(true)
-                .setDefaultHost("music.163.com");
-        webClient = WebClient.create(vertx, webClientOptions);
-    }
 
     public static void main(String[] args) {
         Vertx163Muisc vertxTest = new Vertx163Muisc();
-        CrawlerInfo crawlerInfo = vertxTest.getCrawlerInfo("330313", true, true);
+        CrawlerInfo crawlerInfo = vertxTest.getCrawlerInfo("330313", true, false);
         System.out.println(crawlerInfo);
 
     }
@@ -113,7 +119,7 @@ public class Vertx163Muisc {
         }
     }
 
-    public CrawlerInfo getCrawlerInfo(String uid, boolean relativeUser, boolean userExit) {
+    private CrawlerInfo getCrawlerInfo(String uid, boolean relativeUser, boolean userExit) {
 
         CompletableFuture<List<String>> relativeUserIds = CompletableFuture.completedFuture(new ArrayList<>());
         if (relativeUser) {
@@ -146,7 +152,7 @@ public class Vertx163Muisc {
         try {
             user = userInfoCompletableFuture.get();
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("crawler user " + uid + "failed");
         }
         try {
             songInfos = songInfoFuture.get();
@@ -159,26 +165,25 @@ public class Vertx163Muisc {
         return crawlerInfo;
     }
 
-    public CompletableFuture<String> getFutureHomeHtml(String uid) {
-        HttpRequest<Buffer> request = webClient.requestAbs(HttpMethod.GET, Music163UserHost + uid);
-        CompletableFuture<String> futureHtml = new CompletableFuture<>();
-        request.send(ar -> {
-            if (ar.succeeded()) {
-                HttpResponse<Buffer> response = ar.result();
-                if (response.statusCode() == 200) {
-                    String html =
-                            response.body().toString(StandardCharsets.UTF_8);
-                    futureHtml.complete(html);
-                }
-                futureHtml.complete(response.statusCode() + "");
-            } else if (ar.failed()) {
-                futureHtml.completeExceptionally(ar.cause());
-            }
-        });
-        return futureHtml;
+    /**
+     * 获取个人主页
+     *
+     * @param uid
+     * @return
+     */
+    private CompletableFuture<String> getFutureHomeHtml(String uid) {
+        return getHtml(Music163UserHost + uid);
     }
 
-    public void extractUserInfo(String id, String html, Throwable t, CompletableFuture<User> userCompletableFuture) {
+    /**
+     * 解析个人主页
+     *
+     * @param id
+     * @param html
+     * @param t
+     * @param userCompletableFuture
+     */
+    private void extractUserInfo(String id, String html, Throwable t, CompletableFuture<User> userCompletableFuture) {
         if (t != null) {
             userCompletableFuture.completeExceptionally(t);
 
@@ -234,7 +239,13 @@ public class Vertx163Muisc {
         }
     }
 
-    public CompletableFuture<List<String>> getRelativeUserIds(String uid) {
+    /**
+     * 获取用户相关的用户
+     *
+     * @param uid
+     * @return
+     */
+    private CompletableFuture<List<String>> getRelativeUserIds(String uid) {
         // todo
         CompletableFuture<List<String>> completableFuture = new CompletableFuture<>();
         try {
@@ -290,7 +301,13 @@ public class Vertx163Muisc {
         return completableFuture;
     }
 
-    public CompletableFuture<List<Pair<String, Integer>>> getLoveSongs(String uid) {
+    /**
+     * 获取用户喜爱的歌曲
+     *
+     * @param uid
+     * @return
+     */
+    private CompletableFuture<List<Pair<String, Integer>>> getLoveSongs(String uid) {
         CompletableFuture<List<Pair<String, Integer>>> res = new CompletableFuture<>();
         try {
             String songRecordParam = Music163ApiCons.getSongRecordALLParams(uid, 1, 100);
@@ -323,8 +340,16 @@ public class Vertx163Muisc {
 
     }
 
+    /**
+     * 获取ajax api的数据
+     *
+     * @param text
+     * @param url
+     * @return
+     */
+    private CompletableFuture<String> commonWebAPI(String text, String url) {
+        WebClient webClient = clientThreadLocal.get();
 
-    public CompletableFuture<String> commonWebAPI(String text, String url) {
         CompletableFuture<String> completableFuture = new CompletableFuture<>();
         try {
             Pair<String, String> pair = EncryptTools.encryptCommonAPI(text);
@@ -337,6 +362,14 @@ public class Vertx163Muisc {
             httpRequest.putHeader("Referer", "http://music.163.com/").sendForm(form, ar -> {
                 if (ar.succeeded()) {
                     HttpResponse<Buffer> response = ar.result();
+                    if (response.statusCode() == 503) {
+                        clientThreadLocal.set(vertxClientFactory.newWebClient());
+                        try {
+                            completableFuture.complete(commonWebAPI(text, url).get());
+                        } catch (InterruptedException | ExecutionException e) {
+                            throw new RuntimeException("future get method interrupted");
+                        }
+                    }
                     if (response.statusCode() == 200) {
                         String html =
                                 response.body().toString(StandardCharsets.UTF_8);
@@ -349,6 +382,43 @@ public class Vertx163Muisc {
             completableFuture.completeExceptionally(e);
         }
         return completableFuture;
+    }
+
+
+    /**
+     * 获取 absurl的静态网页
+     *
+     * @param absUrl
+     * @return
+     */
+    private CompletableFuture<String> getHtml(String absUrl) {
+        WebClient webClient = clientThreadLocal.get();
+        HttpRequest<Buffer> request = webClient.requestAbs(HttpMethod.GET, absUrl);
+        CompletableFuture<String> futureHtml = new CompletableFuture<>();
+        request.send(ar -> {
+            if (ar.succeeded()) {
+                HttpResponse<Buffer> response = ar.result();
+                if (response.statusCode() == 503) {
+                    clientThreadLocal.set(vertxClientFactory.newWebClient());
+                    CompletableFuture<String> completableFuture = getHtml(absUrl);
+                    try {
+                        futureHtml.complete(completableFuture.get());
+                    } catch (InterruptedException | ExecutionException e) {
+                        throw new RuntimeException("get method interrupt", e);
+                    }
+                }
+                if (response.statusCode() == 200) {
+                    String html = response.body().toString(StandardCharsets.UTF_8);
+                    futureHtml.complete(html);
+                }
+                futureHtml.complete(response.statusCode() + "");
+            } else if (ar.failed()) {
+                futureHtml.completeExceptionally(ar.cause());
+            }
+        });
+        return futureHtml;
+
+
     }
 
     class CrawlerInfo {

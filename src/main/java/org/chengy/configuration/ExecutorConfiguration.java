@@ -22,18 +22,29 @@ public class ExecutorConfiguration {
     private int threadNums;
 
     @Bean("songExecutor")
-    public ThreadPoolTaskExecutor downLoadSongExecutor() {
+    public ThreadPoolTaskExecutor crawlSongExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(threadNums);
-        executor.setMaxPoolSize(threadNums);
+        executor.setCorePoolSize(7);
+        executor.setMaxPoolSize(7);
         executor.setQueueCapacity(100);
-        executor.setThreadNamePrefix("Downlaodsongthread--");
+        executor.setThreadNamePrefix("crawlsongthread--");
         //队列满的时候 生产者添加任务阻塞住
         executor.setRejectedExecutionHandler(new RejectExecutorforBlocking());
         executor.initialize();
         return executor;
     }
-
+    @Bean("userExecutor")
+    public ThreadPoolTaskExecutor crawlUserExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(threadNums);
+        executor.setMaxPoolSize(threadNums);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("crawluserthread--");
+        //队列满的时候 生产者添加任务阻塞住
+        executor.setRejectedExecutionHandler(new RejectExecutorforBlocking());
+        executor.initialize();
+        return executor;
+    }
 
     class RejectExecutorforBlocking implements RejectedExecutionHandler {
 
