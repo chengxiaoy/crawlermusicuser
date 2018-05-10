@@ -31,16 +31,16 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.chengy.infrastructure.music163secret.Music163ApiCons.Music163UserHost;
 
+@SuppressWarnings("Duplicates")
 @Component
 public class Vertx163Muisc {
 
@@ -52,13 +52,13 @@ public class Vertx163Muisc {
     private SongRepository songRepository;
 
     @Autowired
-    Music163BloomFilter bloomFilter;
+    Music163Filter filter;
 
     @Autowired
     VertxClientFactory vertxClientFactory;
 
     private ThreadLocal<WebClient> clientThreadLocal = ThreadLocal.withInitial(() -> {
-        return vertxClientFactory.newWebClient();
+        return vertxClientFactory.newWebClientWithProxy();
     });
 
 
@@ -66,7 +66,7 @@ public class Vertx163Muisc {
     @Qualifier("userExecutor")
     ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
-    ExecutorService executorService = Executors.newFixedThreadPool(3);
+    ExecutorService executorService = Executors.newFixedThreadPool(5);
 
 
     public static void main(String[] args) {
@@ -78,40 +78,41 @@ public class Vertx163Muisc {
 
     public void crawlUser() throws InterruptedException {
         List<String> seeds = CrawlerBizConfig.getCrawlerUserSeeds();
-
+        System.out.println("the seed for crawl user is:" + seeds);
         BlockingQueue<String> uidQueue = new ArrayBlockingQueue<>(10000);
         uidQueue.addAll(seeds);
         while (true) {
             String uid = uidQueue.take();
             try {
-                boolean userExit = bloomFilter.containsUid(Integer.valueOf(uid));
+                boolean userExit = filter.containsUid(Integer.valueOf(uid));
                 if (userExit && uidQueue.size() > 100) {
                     continue;
                 }
-                Runnable crawlerUserInfoTask = new Runnable() {
-                    @Override
-                    public void run() {
-                        boolean flag = false;
-                        if (uidQueue.size() < 1000) {
-                            flag = true;
+                if (filter.putUid(Integer.parseInt(uid))) {
+                    Runnable crawlerUserInfoTask = new Runnable() {
+                        @Override
+                        public void run() {
+                            boolean flag = false;
+                            if (uidQueue.size() < 1000) {
+                                flag = true;
+                            }
+                            CrawlerInfo crawlerInfo = getCrawlerInfo(uid, flag, userExit);
+                            if (!CollectionUtils.isEmpty(crawlerInfo.getRelativeIds())) {
+                                uidQueue.addAll(crawlerInfo.getRelativeIds());
+                            }
+                            if (crawlerInfo.getUser() != null && !userExit) {
+                                User user = crawlerInfo.getUser();
+                                List<Pair<String, Integer>> songInfo = crawlerInfo.getLoveSongs();
+                                List<String> songIds = songInfo.stream()
+                                        .map(Pair::getLeft).collect(Collectors.toList());
+                                user.setLoveSongId(songIds);
+                                user.setSongScore(songInfo);
+                                userRepository.save(user);
+                            }
                         }
-                        CrawlerInfo crawlerInfo = getCrawlerInfo(uid, flag, userExit);
-                        if (!CollectionUtils.isEmpty(crawlerInfo.getRelativeIds())) {
-                            uidQueue.addAll(crawlerInfo.getRelativeIds());
-                        }
-                        if (crawlerInfo.getUser() != null && !userExit) {
-                            User user = crawlerInfo.getUser();
-                            List<Pair<String, Integer>> songInfo = crawlerInfo.getLoveSongs();
-                            List<String> songIds = songInfo.stream()
-                                    .map(Pair::getLeft).collect(Collectors.toList());
-                            user.setLoveSongId(songIds);
-                            user.setSongScore(songInfo);
-                            userRepository.save(user);
-                            bloomFilter.putUid(Integer.parseInt(uid));
-                        }
-                    }
-                };
-                threadPoolTaskExecutor.execute(crawlerUserInfoTask);
+                    };
+                    threadPoolTaskExecutor.execute(crawlerUserInfoTask);
+                }
             } catch (Exception e) {
                 System.out.println(uid + " get info failed");
                 e.printStackTrace();
@@ -145,17 +146,17 @@ public class Vertx163Muisc {
         User user = null;
         List<Pair<String, Integer>> songInfos = new ArrayList<>();
         try {
-            relaUserIds = relativeUserIds.get();
+            relaUserIds = relativeUserIds.get(3000, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             relaUserIds = new ArrayList<>(0);
         }
         try {
-            user = userInfoCompletableFuture.get();
+            user = userInfoCompletableFuture.get(3000, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             System.out.println("crawler user " + uid + "failed");
         }
         try {
-            songInfos = songInfoFuture.get();
+            songInfos = songInfoFuture.get(3000, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             System.out.println("get user love songs failed" + e.getMessage());
         }
@@ -363,7 +364,7 @@ public class Vertx163Muisc {
                 if (ar.succeeded()) {
                     HttpResponse<Buffer> response = ar.result();
                     if (response.statusCode() == 503) {
-                        clientThreadLocal.set(vertxClientFactory.newWebClient());
+                        clientThreadLocal.set(vertxClientFactory.newWebClientWithProxy());
                         try {
                             completableFuture.complete(commonWebAPI(text, url).get());
                         } catch (InterruptedException | ExecutionException e) {
@@ -399,7 +400,7 @@ public class Vertx163Muisc {
             if (ar.succeeded()) {
                 HttpResponse<Buffer> response = ar.result();
                 if (response.statusCode() == 503) {
-                    clientThreadLocal.set(vertxClientFactory.newWebClient());
+                    clientThreadLocal.set(vertxClientFactory.newWebClientWithProxy());
                     CompletableFuture<String> completableFuture = getHtml(absUrl);
                     try {
                         futureHtml.complete(completableFuture.get());
@@ -457,5 +458,83 @@ public class Vertx163Muisc {
             this.loveSongs = loveSongs;
         }
     }
+
+
+    public void getSongInfo(String songId) throws Exception {
+
+        Song exitSong = songRepository.findSongByCommunityIdAndCommunity(songId, Music163ApiCons.communityName);
+        if (exitSong != null) {
+            return;
+        }
+        CompletableFuture<String> html =
+                getHtml(Music163ApiCons.songHostUrl + songId);
+        String params = Music163ApiCons.getLyricParams(songId);
+        String lyricUrl = Music163ApiCons.lyricUrl;
+
+        CompletableFuture<String> lyric = commonWebAPI(params, lyricUrl);
+
+
+        html.thenCombine(lyric, (h, l) -> {
+            try {
+                saveSongInfo(h, songId, l);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        });
+
+    }
+
+    public void saveSongInfo(String html, String songId,String lyric) throws IOException {
+        Document document = Jsoup.parse(html);
+
+        Elements titleEle = document.select("body > div.g-bd4.f-cb > div.g-mn4 > div > div > div.m-lycifo > div.f-cb > div.cnt > div.hd > div > em");
+        String title = titleEle.get(0).html();
+        Elements artsELes = document.select("body > div.g-bd4.f-cb > div.g-mn4 > div > div > div.m-lycifo > div.f-cb > div.cnt > p:nth-child(2)");
+        String art = artsELes.text().split("：")[1].trim();
+
+        Elements albumEle = document.select("body > div.g-bd4.f-cb > div.g-mn4 > div > div > div.m-lycifo > div.f-cb > div.cnt > p:nth-child(3) > a");
+        String albumTitle = albumEle.get(0).html();
+        String albumId = albumEle.get(0).attr("href").split("id=")[1];
+
+        List<String> arts = new ArrayList<>();
+        Arrays.asList(art.split("/")).forEach(ob -> arts.add(ob.trim()));
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        JsonNode root = objectMapper.readTree(lyric);
+        try {
+            try {
+                lyric = root.findValue("lrc").findValue("lyric").asText();
+            } catch (Exception e) {
+                lyric = root.findValue("tlyric").findValue("lyric").asText();
+            }
+            String composer = "";
+            String pattern = "作曲 : .*?\n";
+            Pattern r = Pattern.compile(pattern);
+            Matcher matcher = r.matcher(lyric);
+            while (matcher.find()) {
+                composer = matcher.group().split(":")[1].trim();
+            }
+
+            String lyricist = "";
+            pattern = "作词 : .*?\n";
+            r = Pattern.compile(pattern);
+            matcher = r.matcher(lyric);
+            while (matcher.find()) {
+                lyricist = matcher.group().split(":")[1].trim();
+            }
+
+            Song song = SongFactory.buildSong(songId, lyric, arts, albumTitle, albumId, title, composer, lyricist);
+            System.out.println(song);
+            songRepository.save(song);
+        } catch (Exception e) {
+            Song song = SongFactory.buildSong(songId, "", arts, albumTitle, albumId, title, "", "");
+            System.out.println(song);
+            songRepository.save(song);
+        }
+    }
+
+
 
 }

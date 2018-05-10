@@ -37,8 +37,7 @@ public class HttpHelper {
 
 	public static CloseableHttpClient client() {
 		return HttpClients.custom().
-				setConnectionManager(HTTPConnectionManager.getConnectionManager()).
-				setMaxConnPerRoute(200).setMaxConnTotal(200).build();
+				setConnectionManager(HTTPConnectionManager.getConnectionManager()).build();
 
 	}
 
@@ -59,6 +58,8 @@ public class HttpHelper {
 			response = client().execute(get);
 			if (response.getStatusLine().getStatusCode() == 200) {
 				return EntityUtils.toString(response.getEntity());
+			}else if (response.getStatusLine().getStatusCode() == 503) {
+				return get(url);
 			} else {
 				throw new Exception("response code is " + response.getStatusLine().getStatusCode());
 			}

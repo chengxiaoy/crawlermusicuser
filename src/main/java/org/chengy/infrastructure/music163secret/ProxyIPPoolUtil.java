@@ -16,6 +16,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.StreamingHttpOutputMessage;
 import org.springframework.stereotype.Component;
 
@@ -31,54 +33,69 @@ import java.util.stream.Collectors;
 public class ProxyIPPoolUtil {
 
     private static String xiciUrl = "http://www.xicidaili.com/nn";
+    @Autowired
+    VertxClientFactory vertxClientFactory;
 
-    private static WebClient webClient = null;
+    @Value("${profile}")
+    String env;
 
-    private static Vertx vertx = null;
 
     private static String targetUrl = Music163ApiCons.Music163UserHost + "330313";
 
+
+    /**
+     * 研究一下copyonwrite
+     */
     private static Set<Pair<String, Integer>> ipSet = new HashSet<>();
 
+    private AtomicInteger index = new AtomicInteger(0);
+
+    private static List<Pair<String, Integer>> ipList = new ArrayList<>(ipSet);
 
     @PostConstruct
-    public void init(){
-        vertx = Vertx.vertx();
-        WebClientOptions webClientOptions = new WebClientOptions();
-        webClientOptions.setMaxPoolSize(5).setConnectTimeout(1000).setKeepAlive(true);
-        webClient = WebClient.create(vertx, webClientOptions);
+    public void init() throws ExecutionException, InterruptedException {
+        if (env.equals("test")) {
+            return;
+        }
+        getAvailableIps();
+        System.out.println("get useful ip size:" + ipList.size());
         ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
         executorService.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
                 try {
-                    Set<Pair<String, Integer>> pairSet = getXiciProxyIps();
-                    ipSet.addAll(validateProxyIp(pairSet, targetUrl));
+                    getAvailableIps();
                 } catch (Exception e) {
                     System.out.println("get xici ipsets error");
                 }
 
             }
-        }, 0, 3, TimeUnit.MINUTES);
+        }, 10, 10, TimeUnit.MINUTES);
     }
 
 
-    public  Pair<String, Integer> peekIp() {
-        return ipSet.iterator().next();
+    /**
+     * round robin get available ip
+     *
+     * @return
+     */
+    public Pair<String, Integer> peekIp() {
+        if (index.get() >= ipList.size()) {
+            index.compareAndSet(ipList.size(), 0);
+        }
+        return ipList.get(index.getAndIncrement());
+
     }
 
 
-    public static void main(String[] args) throws ExecutionException, InterruptedException {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-
-        Set<Pair<String, Integer>> list = getXiciProxyIps();
-        System.out.println(list);
-        System.out.println("before validate, ip size :" + list.size());
-        list = validateProxyIp(list, Music163ApiCons.Music163UserHost + "330313");
-        System.out.println("after validate, ip size :" + list.size());
-
-        stopwatch.stop();
-        System.out.println("process running: " + stopwatch.elapsed(TimeUnit.SECONDS) + "s");
+    public boolean getAvailableIps() throws ExecutionException, InterruptedException {
+        Set<Pair<String, Integer>> pairSet = getXiciProxyIps();
+        ipSet.addAll(pairSet);
+        ipSet = validateProxyIp(ipSet, targetUrl);
+        ipList.clear();
+        ipList.addAll(ipSet);
+        index.set(0);
+        return true;
     }
 
 
@@ -91,17 +108,13 @@ public class ProxyIPPoolUtil {
      * @throws ExecutionException
      * @throws InterruptedException
      */
-    public static Set<Pair<String, Integer>> validateProxyIp(Set<Pair<String, Integer>> needValidateIps, String targetUrl) throws ExecutionException, InterruptedException {
+    public Set<Pair<String, Integer>> validateProxyIp(Set<Pair<String, Integer>> needValidateIps, String targetUrl) throws ExecutionException, InterruptedException {
         CompletableFuture<Set<Pair<String, Integer>>> future = new CompletableFuture<>();
         Set<Pair<String, Integer>> res = new ConcurrentHashSet<>();
         AtomicInteger count = new AtomicInteger();
+        WebClient webClient = vertxClientFactory.newWebClient(50, 1000);
 
         needValidateIps.stream().forEach(pair -> {
-            WebClientOptions webClientOptions = new WebClientOptions();
-            webClientOptions.setMaxPoolSize(1).setConnectTimeout(1000).setKeepAlive(false);
-            webClientOptions.setProxyOptions(new ProxyOptions().setHost(pair.getKey()).setPort(pair.getValue()));
-            WebClient webClient = WebClient.create(vertx, webClientOptions);
-
             HttpRequest<io.vertx.core.buffer.Buffer> httpRequest = webClient.getAbs(targetUrl);
             httpRequest.send(ar -> {
                 if (ar.succeeded()) {
@@ -128,11 +141,12 @@ public class ProxyIPPoolUtil {
      *
      * @return
      */
-    public static Set<Pair<String, Integer>> getXiciProxyIps() {
+    public Set<Pair<String, Integer>> getXiciProxyIps() {
 
         Set<Pair<String, Integer>> pairSet = new ConcurrentHashSet<>(16);
         // 爬去xici的前三页
         List<String> urls = Arrays.asList(xiciUrl, xiciUrl + "/2", xiciUrl + "/3");
+        WebClient webClient = vertxClientFactory.newWebClient(2, 1000);
         urls.forEach(url -> {
                     CompletableFuture<String> futureHtml = new CompletableFuture<>();
 
@@ -152,7 +166,6 @@ public class ProxyIPPoolUtil {
 
                     try {
                         String html = futureHtml.get();
-
                         Document document = Jsoup.parse(html);
                         Element element = document.select("#ip_list > tbody").get(0);
                         Elements elements = element.getElementsByTag("tr");

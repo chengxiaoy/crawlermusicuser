@@ -27,9 +27,14 @@ public class VertxClientFactory {
     }
 
     public WebClient newWebClient() {
+        return newWebClient(10, 1000);
+    }
+
+    public WebClient newWebClient(int poolSize, int timeout) {
         WebClientOptions webClientOptions = new WebClientOptions();
-        webClientOptions.setMaxPoolSize(10).setConnectTimeout(1000).setKeepAlive(true)
+        webClientOptions.setMaxPoolSize(poolSize).setConnectTimeout(timeout).setKeepAlive(true)
                 .setDefaultHost("music.163.com");
         return WebClient.create(vertx, webClientOptions);
     }
+
 }

@@ -20,7 +20,7 @@ import java.security.cert.X509Certificate;
 public class HTTPConnectionManager {
 
 
-	private static HttpClientConnectionManager connectionManager;
+	private static PoolingHttpClientConnectionManager connectionManager;
 
 
 	static {
@@ -48,6 +48,8 @@ public class HTTPConnectionManager {
 
 		connectionManager = new PoolingHttpClientConnectionManager(reg);
 
+		connectionManager.setDefaultMaxPerRoute(200);
+		connectionManager.setMaxTotal(200);
 
 
 	}

@@ -122,12 +122,7 @@ public class CrawlerApplicationTests {
 		music163Discovery.relativedUser("330313");
 	}
 
-	@Test
-	public void getDiscoverySong() throws Exception {
-		List<Song> songList = music163Discovery.getDiscoverySong("330313");
 
-		System.out.println(songList.stream().map(ob -> ob.getTitle() + showArts(ob.getArts())).collect(Collectors.toList()));
-	}
 
 
 	public String showArts(List<String> arts) {
@@ -155,10 +150,7 @@ public class CrawlerApplicationTests {
 	}
 
 
-	@Test
-	public void getSongPlayTimes() throws Exception {
-		music163Statistics.getSongRecord("330313");
-	}
+
 
 	@Test
 	public void getRelativeSong() {

@@ -6,6 +6,7 @@ import com.google.common.hash.Funnels;
 import io.vertx.core.impl.ConcurrentHashSet;
 import org.chengy.model.User;
 import org.chengy.repository.UserRepository;
+import org.chengy.repository.matcher.UserMatcherFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Example;
@@ -14,55 +15,67 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.BitSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+
+/**
+ * 该类 提供爬虫系统中的判重机制
+ * 爬虫数据太小  用bloomfilter有误判率 直接使用bitmap
+ */
 @Component
-public class Music163BloomFilter {
+public class Music163Filter {
 
-    private BloomFilter<Integer> userBloomFilter;
 
-    private ConcurrentHashSet<Integer> hashSet = new ConcurrentHashSet<>();
+    private BitSet bitSet = new BitSet();
+
 
     @Autowired
     UserRepository userRepository;
 
-    @Value("${bloomfilter.nums}")
-    private Integer expectInsertions;
+    @Value("${profile}")
+    String env;
 
     @PostConstruct
     public void init() {
-        userBloomFilter = BloomFilter.create(Funnels.integerFunnel(), expectInsertions);
-        loadDbData();
-        System.out.println("init filter success");
+        //做一个开关
+        if (!env.equals("test")){
+            loadDbData();
+            System.out.println("init filter success");
+        }
     }
 
 
     public void loadDbData() {
 
         int pageId = 0;
-        int pageSize = 1000;
-        User user = new User();
-        user.setCommunity(Music163ApiCons.communityName);
-        Example<User> userExample = Example.of(user, ExampleMatcher.matching().withMatcher("community",
-                match -> match.caseSensitive().exact()).withIgnorePaths("id", "gender").withIgnoreNullValues());
+        int pageSize = 10000;
+        Example<User> userExample = UserMatcherFactory.music163BasicUserMatcher();
         List<Integer> uids = userRepository.findAll(userExample, new PageRequest(pageId++, pageSize)).getContent()
                 .stream().map(ob -> Integer.valueOf(ob.getCommunityId())).collect(Collectors.toList());
         while (uids.size() > 0) {
-            //userBloomFilter.put(uid);
-            hashSet.addAll(uids);
+            for (Integer uid : uids) {
+                putUid(uid);
+            }
             uids = userRepository.findAll(userExample, new PageRequest(pageId++, pageSize)).getContent()
                     .stream().map(ob -> Integer.valueOf(ob.getCommunityId())).collect(Collectors.toList());
         }
-        System.out.println("load user data to BloomFilter finished");
+        System.out.println("load user data to filter finished");
     }
 
 
     public boolean containsUid(Integer uid) {
-        return hashSet.contains(uid);
+        synchronized (this) {
+            return bitSet.get(uid);
+        }
     }
 
     public boolean putUid(Integer uid) {
-        return hashSet.add(uid);
+        synchronized (this) {
+            bitSet.set(uid);
+            return true;
+        }
     }
 }

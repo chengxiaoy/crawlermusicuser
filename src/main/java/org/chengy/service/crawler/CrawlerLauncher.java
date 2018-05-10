@@ -7,6 +7,7 @@ import org.chengy.model.User;
 import org.chengy.repository.SongRepository;
 import org.chengy.repository.UserRepository;
 import org.chengy.service.crawler.music163.Crawler163music;
+import org.chengy.service.crawler.music163.Vertx163Muisc;
 import org.chengy.service.statistics.Music163Statistics;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,6 +36,8 @@ public class CrawlerLauncher {
 	@Autowired
 	Music163Statistics music163Statistics;
 	@Autowired
+	Vertx163Muisc vertx163Muisc;
+	@Autowired
 	@Qualifier("songExecutor")
 	ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
@@ -53,7 +56,7 @@ public class CrawlerLauncher {
 						if (songIdlist != null && !CollectionUtils.isEmpty(songIdlist)) {
 							for (String songId : songIdlist) {
 								try {
-									crawler163music.getSongInfo(songId);
+                                    vertx163Muisc.getSongInfo(songId);
 								} catch (Exception e) {
 									e.printStackTrace();
 								}
@@ -145,39 +148,6 @@ public class CrawlerLauncher {
 	}
 
 
-	public void getSongRecordInfo() {
-		int pageIndex = 1;
-		int pageSize = 100;
-		Pageable pageable = new PageRequest(pageIndex, pageSize);
-		List<User> userList = userRepository.findAll(pageable).getContent();
 
-		while (userList.size() > 0) {
-			userList=userList.stream().filter(ob->ob.getLoveSongId().size()>0).collect(Collectors.toList());
-			List<String> userIds = userList.stream().filter(ob -> ob.getSongRecord() == null || !ob.getSongRecord()).map(ob -> ob.getCommunityId()).collect(Collectors.toList());
-			for (String uid : userIds) {
-				Runnable runnable = new Runnable() {
-					@Override
-					public void run() {
-						try {
-							music163Statistics.getSongRecord(uid);
-							System.out.println("get uid " + uid + " song record info success");
-						} catch (Exception e) {
-							e.printStackTrace();
-							System.out.println("get uid " + uid + " song record info failed");
-							User user=
-							userRepository.findByCommunityIdAndCommunity(uid,Music163ApiCons.communityName);
-							user.setSongRecord(false);
-							userRepository.save(user);
-						}
-					}
-				};
-				threadPoolTaskExecutor.execute(runnable);
-			}
-			pageIndex++;
-			pageable = new PageRequest(pageIndex, pageSize);
-			userList = userRepository.findAll(pageable).getContent();
-		}
-
-	}
 
 }
