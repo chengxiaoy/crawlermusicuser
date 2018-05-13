@@ -80,6 +80,8 @@ public class Vertx163Muisc {
         List<String> seeds = CrawlerBizConfig.getCrawlerUserSeeds();
         System.out.println("the seed for crawl user is:" + seeds);
         BlockingQueue<String> uidQueue = new ArrayBlockingQueue<>(10000);
+        uidQueue.add("250038717");
+        uidQueue.add("625356566");
         uidQueue.addAll(seeds);
         while (true) {
             String uid = uidQueue.take();
@@ -485,7 +487,7 @@ public class Vertx163Muisc {
 
     }
 
-    public void saveSongInfo(String html, String songId,String lyric) throws IOException {
+    public void saveSongInfo(String html, String songId, String lyric) throws IOException {
         Document document = Jsoup.parse(html);
 
         Elements titleEle = document.select("body > div.g-bd4.f-cb > div.g-mn4 > div > div > div.m-lycifo > div.f-cb > div.cnt > div.hd > div > em");
@@ -534,7 +536,6 @@ public class Vertx163Muisc {
             songRepository.save(song);
         }
     }
-
 
 
 }

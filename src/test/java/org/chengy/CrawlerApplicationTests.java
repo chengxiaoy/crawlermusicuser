@@ -116,11 +116,6 @@ public class CrawlerApplicationTests {
 		music163Statistics.getMostPopSong("datafile/popsong.txt");
 	}
 
-	@Test
-	public void getRelativedUser() throws Exception {
-
-		music163Discovery.relativedUser("330313");
-	}
 
 
 

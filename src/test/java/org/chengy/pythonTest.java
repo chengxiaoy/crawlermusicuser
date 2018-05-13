@@ -37,12 +37,22 @@ public class pythonTest {
     UserRepository userRepository;
 
     @Test
+    public void getUserBasedRecommendTest() {
+        String uid="250038717";
+        System.out.println(env);
+        List<Song> songList = music163Discovery.userBasedRecommend(uid, 100, 10);
+        System.out.println("====== user recommend======" + songList);
+        songList = music163Discovery.itemBasedRecommend(uid, 100, 10);
+        System.out.println("====== item recommend======" + songList);
+        songList = music163Discovery.getRecommendSongs(uid, 100, 10);
+        System.out.println("====== model recommend======" + songList);
+    }
+
+
+    @Test
     public void testScore() {
 
-        Set<String> uidSet =
-                music163Discovery.getRandomUsers(100).stream().filter(ob -> ob.getSongScore().size() > 0).map(ob -> ob.getCommunityId()).collect(Collectors.toSet());
 
-        System.out.println(uidSet);
     }
 
     @Test
@@ -52,27 +62,13 @@ public class pythonTest {
     }
 
 
-    @Test
-    public void testPython() throws Exception {
-        System.out.println(env);
-        Music163Discovery.ScoreReport scoreReport = music163Discovery.relativedUser("330313");
-        List<Map.Entry<String, Float>> entryList = scoreReport.getSimilarScore().entrySet().stream().sorted(Collections.reverseOrder(Comparator.comparing(Map.Entry::getValue)))
-                .limit(10).collect(Collectors.toList());
-
-        System.out.println(entryList);
-
-        List<Map.Entry<String, List<String>>> songList = scoreReport.getIntersectionSongs().entrySet().stream().sorted(Collections.reverseOrder(Comparator.comparing(ob -> ob.getValue().size())))
-                .limit(10).collect(Collectors.toList());
-        System.out.println(songList);
-
-    }
 
     public static void main(String[] args) {
         Process process;
         try {
             String argv1 = "330313";
-            String argv2 = "556726207";
-            String filePath = "/Users/chengxiaoy/PycharmProjects/abracadabra/music163/user/facade.py";
+            String argv2 = "1428889750,304528598,261810251,442709295,123163229,353085612";
+            String filePath = "/Users/chengxiaoy/PycharmProjects/abracadabra/music163/user/user_recommend.py";
             String[] argvs = new String[]{"python", filePath, argv1, argv2};
             process = Runtime.getRuntime().exec(argvs);
             //   process.waitFor();
