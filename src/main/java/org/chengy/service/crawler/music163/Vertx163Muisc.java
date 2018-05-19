@@ -2,6 +2,8 @@ package org.chengy.service.crawler.music163;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.channel.ConnectTimeoutException;
+import io.netty.handler.timeout.TimeoutException;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -24,6 +26,8 @@ import org.chengy.repository.UserRepository;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -34,6 +38,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -44,6 +49,8 @@ import static org.chengy.infrastructure.music163secret.Music163ApiCons.Music163U
 @Component
 public class Vertx163Muisc {
 
+
+    public static Logger LOGGER = LoggerFactory.getLogger(Vertx163Muisc.class);
 
     @Autowired
     private UserRepository userRepository;
@@ -58,7 +65,7 @@ public class Vertx163Muisc {
     VertxClientFactory vertxClientFactory;
 
     private ThreadLocal<WebClient> clientThreadLocal = ThreadLocal.withInitial(() -> {
-        return vertxClientFactory.newWebClientWithProxy();
+        return vertxClientFactory.newWebClient();
     });
 
 
@@ -155,12 +162,12 @@ public class Vertx163Muisc {
         try {
             user = userInfoCompletableFuture.get(3000, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
-            System.out.println("crawler user " + uid + "failed");
+            LOGGER.info("crawler user " + uid + "failed", e);
         }
         try {
             songInfos = songInfoFuture.get(3000, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
-            System.out.println("get user love songs failed" + e.getMessage());
+            LOGGER.info("get user " + uid + "love songs failed", e);
         }
 
         CrawlerInfo crawlerInfo = new CrawlerInfo(user, relaUserIds);
@@ -352,6 +359,7 @@ public class Vertx163Muisc {
      */
     private CompletableFuture<String> commonWebAPI(String text, String url) {
         WebClient webClient = clientThreadLocal.get();
+        AtomicReference<Boolean> proxySwitch = new AtomicReference<>(false);
 
         CompletableFuture<String> completableFuture = new CompletableFuture<>();
         try {
@@ -366,16 +374,14 @@ public class Vertx163Muisc {
                 if (ar.succeeded()) {
                     HttpResponse<Buffer> response = ar.result();
                     if (response.statusCode() == 503) {
-                        clientThreadLocal.set(vertxClientFactory.newWebClientWithProxy());
-                        try {
-                            completableFuture.complete(commonWebAPI(text, url).get());
-                        } catch (InterruptedException | ExecutionException e) {
-                            throw new RuntimeException("future get method interrupted");
-                        }
+                        proxySwitch.set(true);
                     }
                     if (response.statusCode() == 200) {
                         String html =
                                 response.body().toString(StandardCharsets.UTF_8);
+                        if (html.contains("cheating")) {
+                            proxySwitch.set(true);
+                        }
                         completableFuture.complete(html);
                     }
                     completableFuture.complete(response.statusCode() + "");
@@ -383,6 +389,13 @@ public class Vertx163Muisc {
             });
         } catch (Exception e) {
             completableFuture.completeExceptionally(e);
+        }
+        if (proxySwitch.get()) {
+            return commonWebAPI(text, url);
+        }
+        if (proxySwitch.get()) {
+            clientThreadLocal.set(vertxClientFactory.newWebClientWithProxy());
+            return commonWebAPI(text, url);
         }
         return completableFuture;
     }
@@ -398,20 +411,18 @@ public class Vertx163Muisc {
         WebClient webClient = clientThreadLocal.get();
         HttpRequest<Buffer> request = webClient.requestAbs(HttpMethod.GET, absUrl);
         CompletableFuture<String> futureHtml = new CompletableFuture<>();
+        AtomicReference<Boolean> proxySwitch = new AtomicReference<>(false);
         request.send(ar -> {
             if (ar.succeeded()) {
                 HttpResponse<Buffer> response = ar.result();
                 if (response.statusCode() == 503) {
-                    clientThreadLocal.set(vertxClientFactory.newWebClientWithProxy());
-                    CompletableFuture<String> completableFuture = getHtml(absUrl);
-                    try {
-                        futureHtml.complete(completableFuture.get());
-                    } catch (InterruptedException | ExecutionException e) {
-                        throw new RuntimeException("get method interrupt", e);
-                    }
+                    proxySwitch.set(true);
                 }
                 if (response.statusCode() == 200) {
                     String html = response.body().toString(StandardCharsets.UTF_8);
+                    if (html.contains("你要查找的网页找不到")) {
+                        proxySwitch.set(true);
+                    }
                     futureHtml.complete(html);
                 }
                 futureHtml.complete(response.statusCode() + "");
@@ -419,6 +430,11 @@ public class Vertx163Muisc {
                 futureHtml.completeExceptionally(ar.cause());
             }
         });
+
+        if (proxySwitch.get()) {
+            clientThreadLocal.set(vertxClientFactory.newWebClientWithProxy());
+            return getHtml(absUrl);
+        }
         return futureHtml;
 
 

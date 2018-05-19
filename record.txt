@@ -1,0 +1,20 @@
+====== user recommend======[arts: [宋冬野] title: 安和桥, arts: [陈鸿宇] title: 理想三旬]
+====== item recommend======[arts: [Brian Crain] title: canon in d, arts: [李志辉] title: 小桥流水人家]
+====== model recommend======[arts: [周传雄] title: 黄昏, arts: [Taylor Swift, The Civil Wars] title: Safe And Sound, arts: [Westlife] title: Beautiful World, arts: [Sia] title: Chandelier, arts: [Kim Taylor] title: I Am You, arts: [Taylor Swift] title: Blank Space, arts: [吴雨霏] title: 吴哥窟, arts: [张赫宣] title: 我们不该这样的, arts: [房东的猫] title: 简情歌 （吉他版）, arts: [RADWIMPS] title: デート, arts: [刘莉旻] title: 一口迷, arts: [魏如萱, 马頔] title: 星期三或礼拜三, arts: [Sufjan Stevens] title: Mystery of Love]
+
+
+我的：
+====== user recommend======[arts: [宋冬野] title: 安和桥, arts: [赵紫骅] title: 可乐, arts: [Jam] title: 七月上, arts: [陈鸿宇] title: 理想三旬, arts: [鹿先森乐队] title: 春风十里, arts: [谢春花] title: 借我, arts: [薛之谦] title: 刚刚好, arts: [陈粒] title: 小半, arts: [陈一发儿] title: 童话镇, arts: [以冬] title: 我的一个道姑朋友（cover タイナカ 彩智）（Cover Lon）, arts: [JC] title: 说散就散]
+====== item recommend======[arts: [林忆莲] title: 为你我受冷风吹(Live) - live, arts: [阿鲲] title: 再会 (片尾音乐), arts: [AC, DC] title: Back In Black, arts: [Candy_Wind] title: 繁华的风景, arts: [何训田] title: 春歌]
+====== model recommend======[arts: [孙耀威] title: 爱的故事(上), arts: [周杰伦] title: 淡水海边, arts: [赵雷] title: Over, arts: [徐佳莹] title: 寻人启事, arts: [艾索] title: 晚安喵, arts: [吴雨霏] title: 吴哥窟, arts: [横山克] title: アゲイン, arts: [燕池] title: 苦昼短, arts: [徐佳莹] title: 不醉不会, arts: [郭顶] title: 保留, arts: [akiko] title: アイ・ミス・ユー, arts: [丁可] title: If]
+
+
+====== user recommend======[arts: [宋冬野] title: 安和桥, arts: [赵紫骅] title: 可乐, arts: [Jam] title: 七月上, arts: [陈鸿宇] title: 理想三旬, arts: [鹿先森乐队] title: 春风十里, arts: [谢春花] title: 借我, arts: [薛之谦] title: 刚刚好, arts: [陈粒] title: 小半, arts: [陈一发儿] title: 童话镇, arts: [以冬] title: 我的一个道姑朋友（cover タイナカ 彩智）（Cover Lon）, arts: [JC] title: 说散就散]
+====== item recommend======[arts: [Ólafur Arnalds] title: Ljósie, arts: [许巍, 汪峰, 周晓鸥, 马上又, 栾树, 丁武, 张楚, 李延亮, 高旗] title: 礼物]
+====== model recommend======[arts: [周杰伦] title: 淡水海边, arts: [符家浚] title: 自动弃权 (放手版), arts: [卢冠廷] title: 一生所爱 (One Take Raw Demo), arts: [Richard Clayderman] title: 爱的纪念, arts: [以冬] title: 我的一个道姑朋友（cover タイナカ 彩智）（Cover Lon）, arts: [陈粒] title: 当我在这里, arts: [Edvard Grieg] title: 催眠曲]
+
+{28875230=98.85822343652832, 66842=98.08759099332114, 419594258=95.39812585257626, 528545459=93.86850680226395, 4153632=90.24824638735163, 28481818=84.46551786404675, 26545309=83.70129923141934, 27668089=77.41605426810847, 28953642=77.41605426810847, 486228042=77.19191244767548, 518254157=73.92491057412639, 2008681=72.76342764157553, 37095955=71.14610286942204, 408332879=69.24477595468697, 34179782=68.74206232323584, 25641640=68.43907035006418, 440353010=67.60276633130694, 32217105=67.06589509785765, 449759855=66.86347730853072, 402073638=65.29440037047313}
+
+====== user recommend======[arts: [宋冬野] title: 安和桥, arts: [赵紫骅] title: 可乐, arts: [Jam] title: 七月上, arts: [陈鸿宇] title: 理想三旬, arts: [鹿先森乐队] title: 春风十里, arts: [谢春花] title: 借我, arts: [薛之谦] title: 刚刚好, arts: [陈粒] title: 小半, arts: [陈一发儿] title: 童话镇, arts: [以冬] title: 我的一个道姑朋友（cover タイナカ 彩智）（Cover Lon）, arts: [JC] title: 说散就散]
+====== item recommend======[]
+====== model recommend======[arts: [The Jane Doe's] title: QUIET INSIDE, arts: [周笔畅] title: 谁动了我的琴弦, arts: [Joris Voorn] title: Ringo (Original), arts: [艾索] title: 晚安喵, arts: [燕池] title: 苦昼短, arts: [张靓颖] title: Dream It Possible, arts: [Rich Brian] title: Dat $tick, arts: [Linkin Park] title: In The End, arts: [Alan Walker, Coldplay] title: Hymn For The Weekend [Remix], arts: [Hoaprox] title: #Lov3 #Ngẫu Hứng, arts: [宿羽阳] title: 重逢]

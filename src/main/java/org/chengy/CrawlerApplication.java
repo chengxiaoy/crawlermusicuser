@@ -11,6 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class CrawlerApplication implements CommandLineRunner {
 
+
 	@Autowired
 	CrawlerLauncher launcher;
 	@Autowired
@@ -25,7 +26,7 @@ public class CrawlerApplication implements CommandLineRunner {
 	}
 
 	public void run(String... var1) throws Exception {
-	//	launcher.saveMusic163SongByUser();
+//		launcher.saveMusic163SongByUser();
 //
 		//launcher.getSongRecordInfo();
 	//	vertx163Muisc.crawlUser();

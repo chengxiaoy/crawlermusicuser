@@ -42,7 +42,7 @@ public class CrawlerLauncher {
 	ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
 	public void saveMusic163SongByUser() {
-		int pageIndex = 1;
+		int pageIndex = 0;
 		while (true) {
 			int pageSize = 100;
 			Pageable pageable = new PageRequest(pageIndex, pageSize);

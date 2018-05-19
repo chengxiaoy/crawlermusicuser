@@ -1,5 +1,7 @@
 package org.chengy.service.discovery;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import jdk.nashorn.internal.ir.WithNode;
@@ -20,6 +22,9 @@ import org.chengy.repository.matcher.UserMatcherFactory;
 import org.chengy.service.crawler.music163.Crawler163music;
 import org.chengy.service.statistics.J2PythonUtil;
 import org.chengy.service.statistics.Music163Statistics;
+import org.omg.CosNaming.NamingContextExtPackage.StringNameHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -34,6 +39,9 @@ import java.util.stream.Stream;
  */
 @Service
 public class Music163Discovery {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Music163Discovery.class);
+
     @Autowired
     UserRepository userRepository;
     @Autowired
@@ -45,6 +53,8 @@ public class Music163Discovery {
 
     @Autowired
     SongRecordRepository songRecordRepository;
+
+    private static final String pythonFile = "/Users/chengxiaoy/PycharmProjects/abracadabra/music163/user/facade.py";
 
 
     /**
@@ -63,11 +73,8 @@ public class Music163Discovery {
         String randomUserIds = String.join(",", uidList);
 
 
-        String argv1 = uid;
-        String argv2 = randomUserIds;
-        String argv3 = String.valueOf(k);
-        String filePath = "/Users/chengxiaoy/PycharmProjects/abracadabra/music163/user/model_recommend.py";
-        String[] argvs = new String[]{"python", filePath, argv1, argv2, argv3};
+        String filePath = pythonFile;
+        String[] argvs = new String[]{"python", filePath, "model_recommend", uid, randomUserIds, String.valueOf(k)};
 
         String s = null;
 
@@ -88,7 +95,7 @@ public class Music163Discovery {
      * @param uid
      * @return
      */
-    public List<String> filterSongs(Set<String> songIdSet, String uid) {
+    private List<String> filterSongs(Set<String> songIdSet, String uid) {
         User user = userRepository.findByCommunityIdAndCommunity(uid, Music163ApiCons.communityName);
 
         songIdSet.removeAll(user.getLoveSongId());
@@ -126,17 +133,24 @@ public class Music163Discovery {
         Set<String> idSet = userList.stream().filter(ob -> ob.getSongScore().size() > 0)
                 .map(BaseEntity::getCommunityId).collect(Collectors.toSet());
         String candidate_id_str = String.join(",", idSet);
-        String argv1 = uid;
-        String argv2 = candidate_id_str;
-        String filePath = "/Users/chengxiaoy/PycharmProjects/abracadabra/music163/user/user_recommend.py";
-        String[] argvs = new String[]{"python", filePath, argv1, argv2, String.valueOf(k), type};
+        String argv2 = uid;
+        String argv3 = candidate_id_str;
+        String filePath = pythonFile;
+
+        String argv1 = "";
+        if (type.equals("user")) {
+            argv1 = "user_recommend";
+        } else if (type.equals("item")) {
+            argv1 = "item_recommend";
+        }
+        String[] argvs = new String[]{"python", filePath, argv1, argv2, argv3, String.valueOf(k)};
         J2PythonUtil.PythonRes pythonRes = J2PythonUtil.callPythonProcess(argvs);
         if (pythonRes.getCode() == 0) {
 
-        Map<String, Object> songScore = pythonRes.getScoreMap();
-        Set<String> topSongIds =
-                songScore.entrySet().stream().sorted(Collections.reverseOrder(Comparator.comparingDouble(x -> (double) (x.getValue()))))
-                        .limit(k).map(ob -> ob.getKey()).collect(Collectors.toSet());
+            Map<String, Object> songScore = pythonRes.getScoreMap();
+            Set<String> topSongIds =
+                    songScore.entrySet().stream().filter(ob -> !String.valueOf(ob.getValue()).equals("NaN")).sorted(Collections.reverseOrder(Comparator.comparingDouble(x -> (double) (x.getValue()))))
+                            .limit(k).map(ob -> ob.getKey()).collect(Collectors.toSet());
 
 
             List<String> songIds = filterSongs(topSongIds, uid);
@@ -146,17 +160,48 @@ public class Music163Discovery {
     }
 
 
-    public List<User> getRandomUsers(int n) {
+    private List<User> getRandomUsers(int n) {
         int pageSize = n;
         long count = userRepository.count(UserMatcherFactory.music163BasicUserMatcher());
         int pageCount = (int) count / pageSize;
 
         Random r = new Random();
         int pageId = r.nextInt(pageCount);
-
         return userRepository.findAll(UserMatcherFactory.music163BasicUserMatcher(), new PageRequest(pageId, pageSize)).getContent();
 
     }
+
+
+    /**
+     * @param songId
+     * @param k
+     * @return
+     */
+    public List<Song> getSimilarSongs(String songId, int k) throws JsonProcessingException {
+        SongRecord songRecord = songRecordRepository.findSongRecordByCommunityIdAndCommunity(songId, Music163ApiCons.communityName);
+        if (songRecord == null) {
+            LOGGER.warn("have no songRecord of " + songId);
+            throw new NullPointerException("have no songRecord of" + songId);
+        }
+        List<String> userIds = songRecord.getLoverIds();
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String argv1 = "song_similar";
+        String argv2 = songId;
+        String argv3 = objectMapper.writeValueAsString(userIds);
+        String argv4 = String.valueOf(k);
+        String filePath = pythonFile;
+        String[] argvs = new String[]{"python", filePath, argv1, argv2, argv3, argv4};
+        J2PythonUtil.PythonRes pythonRes = J2PythonUtil.callPythonProcess(argvs);
+        if (pythonRes.getCode() == 0) {
+            return songRepository.findSongsByCommunityIdInAndCommunity(pythonRes.getScoreMap().keySet(), Music163ApiCons.communityName);
+        }
+        return null;
+    }
+
+
+
+
 
 
 }

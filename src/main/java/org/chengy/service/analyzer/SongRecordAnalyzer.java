@@ -1,5 +1,6 @@
 package org.chengy.service.analyzer;
 
+import com.oracle.tools.packager.mac.MacAppBundler;
 import org.apache.commons.lang3.tuple.Pair;
 import org.chengy.infrastructure.music163secret.Music163ApiCons;
 import org.chengy.infrastructure.music163secret.SongRecordFactory;
@@ -16,7 +17,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 
@@ -114,6 +118,23 @@ public class SongRecordAnalyzer {
 
         user.setSongRecord(true);
         userRepository.save(user);
+    }
+
+
+    /**
+     * 歌曲的平均得分
+     * @param songIds
+     * @return
+     */
+    public Map<String, Double> getSongAverageScore(Collection<String> songIds) {
+
+        List<SongRecord> songRecordList = songRecordRepository.findSongRecordsByCommunityIdInAndCommunity(songIds, Music163ApiCons.communityName);
+        Map<String, Double> map = songRecordList.stream().collect(Collectors.toMap(ob -> ob.getCommunityId(), ob -> {
+            int loveNums = ob.getLoveNum();
+            Long sumScore = ob.getScore();
+            return  new BigDecimal(sumScore).divide(new BigDecimal(loveNums),5,BigDecimal.ROUND_HALF_DOWN).doubleValue();
+        }));
+        return map;
     }
 
 }

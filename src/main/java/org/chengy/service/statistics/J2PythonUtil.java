@@ -1,5 +1,6 @@
 package org.chengy.service.statistics;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
@@ -14,21 +15,23 @@ public class J2PythonUtil {
 
 
     public static PythonRes callPythonProcess(String[] args) {
-
+        objectMapper.configure(JsonParser.Feature.ALLOW_NON_NUMERIC_NUMBERS, true);
         Process process = null;
         PythonRes pythonRes = new PythonRes();
         try {
             process = Runtime.getRuntime().exec(args);
             BufferedReader stdOut = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String s;
+            String ss = null;
             while ((s = stdOut.readLine()) != null) {
-                try {
-                    Map<String, Object> map = objectMapper.readValue(s, new TypeReference<Map<String, Object>>() {
-                    });
-                    pythonRes.scoreMap = map;
-                } catch (Exception e) {
-                    //e.printStackTrace();
-                }
+                ss = s;
+            }
+            try {
+                Map<String, Object> map = objectMapper.readValue(ss, new TypeReference<Map<String, Object>>() {
+                });
+                pythonRes.scoreMap = map;
+            } catch (Exception e) {
+                e.printStackTrace();
             }
             // 0是调用进程正常
             int result = 1;
@@ -36,7 +39,7 @@ public class J2PythonUtil {
             pythonRes.code = result;
             process.destroy();
         } catch (InterruptedException | IOException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
         } finally {
             if (process != null) {
                 process.destroy();
