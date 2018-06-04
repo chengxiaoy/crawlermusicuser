@@ -3,28 +3,26 @@ package org.chengy.service.statistics;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.chengy.infrastructure.music163secret.EncryptTools;
 import org.chengy.infrastructure.music163secret.Music163ApiCons;
-import org.chengy.infrastructure.music163secret.SongRecordFactory;
-import org.chengy.model.BaseEntity;
-import org.chengy.model.Song;
-import org.chengy.model.SongRecord;
-import org.chengy.model.User;
-import org.chengy.repository.SongRecordRepository;
-import org.chengy.repository.SongRepository;
-import org.chengy.repository.UserRepository;
+import org.chengy.newmodel.BaseModel;
+import org.chengy.newmodel.Music163Song;
+import org.chengy.newmodel.Music163SongRecord;
+import org.chengy.newmodel.Music163User;
+import org.chengy.repository.remote.Music163SongRecordRepository;
+import org.chengy.repository.remote.Music163SongRepository;
+import org.chengy.repository.remote.Music163UserRepository;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.lang.reflect.Field;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -35,11 +33,11 @@ import java.util.stream.Collectors;
 @Component
 public class Music163Statistics {
     @Autowired
-    UserRepository userRepository;
+    Music163UserRepository userRepository;
     @Autowired
-    SongRepository songRepository;
+    Music163SongRepository songRepository;
     @Autowired
-    SongRecordRepository songRecordRepository;
+    Music163SongRecordRepository songRecordRepository;
     @Autowired
     ObjectMapper objectMapper;
 
@@ -51,14 +49,14 @@ public class Music163Statistics {
      * @throws IOException
      */
     public void getLyricByLyricist(String lyricist) throws IOException {
-        List<Song> songList =
-                songRepository.findSongsByLyricist(lyricist);
+        List<Music163Song> songList =
+                songRepository.findMusic163SongsByLyricist(lyricist);
         String dirPath = "datafile" + File.separator + "song" + File.separator + lyricist;
         File dir = new File(dirPath);
         if (!dir.exists()) {
             dir.mkdirs();
         }
-        for (Song song : songList) {
+        for (Music163Song song : songList) {
             String songtitle = song.getTitle();
             songtitle = songtitle.replace("/", "／");
             File file = new File(dirPath + File.separator + songtitle);
@@ -87,14 +85,10 @@ public class Music163Statistics {
 
         int pageIndex = 0;
         int pageSize = 1000;
-        List<Song> songList = songRepository.findAll(new PageRequest(pageIndex, pageSize)).getContent();
+        List<Music163Song> songList = songRepository.findAll(new PageRequest(pageIndex, pageSize)).getContent();
         while (songList.size() > 0) {
-            for (Song song : songList) {
-//				Field field =
-//						FieldUtils.getField(Song.class, fieldname);
-//				field.get(song);
-                Field field = FieldUtils.getField(Song.class, fieldname, true);
-
+            for (Music163Song song : songList) {
+                Field field = FieldUtils.getField(Music163Song.class, fieldname, true);
                 String key = field.get(song).toString();
                 if (key != null && !key.equals("")) {
                     if (map.keySet().contains(key)) {
@@ -119,64 +113,6 @@ public class Music163Statistics {
                 fileWriter.write("\n");
             }
         }
-    }
-
-    /**
-     * 查询被喜欢次数最多的歌曲的歌曲
-     */
-    public void getMostPopSong(String filename) throws IOException {
-
-        File file = new File(filename);
-        if (!file.exists()) {
-            file.createNewFile();
-        }
-
-
-        ConcurrentHashMap<String, Integer> concurrentHashMap = new ConcurrentHashMap<>();
-
-        int pageIndex = 0;
-        int pageSize = 1000;
-        List<User> userList = userRepository.findAll(new PageRequest(pageIndex, pageSize)).getContent();
-        while (userList.size() > 0) {
-            for (User user : userList) {
-                List<String> songIds = user.getLoveSongId();
-                for (String id : songIds) {
-                    if (concurrentHashMap.containsKey(id)) {
-                        concurrentHashMap.put(id, concurrentHashMap.get(id) + 1);
-                    } else {
-                        concurrentHashMap.put(id, 1);
-                    }
-                }
-            }
-            userList = userRepository.findAll(new PageRequest(++pageIndex, pageSize)).getContent();
-        }
-
-        List<Map.Entry<String, Integer>> sorted =
-                concurrentHashMap.entrySet().stream().sorted((ob1, ob2) -> -(ob1.getValue() - ob2.getValue())).collect(Collectors.toList());
-        FileWriter fileWriter = new FileWriter(file);
-
-        for (int i = 0; i < 100; i++) {
-            Song song =
-                    songRepository.findSongByCommunityIdAndCommunity(sorted.get(i).getKey(), Music163ApiCons.communityName);
-
-            if (song != null) {
-                fileWriter.write(song.getTitle());
-                fileWriter.write("\t");
-                fileWriter.write(song.getArts().get(0));
-                fileWriter.write("\t");
-                fileWriter.write(sorted.get(i).getValue().toString());
-                fileWriter.write("\n");
-            } else {
-                fileWriter.write(sorted.get(i).getKey());
-                fileWriter.write("\t");
-                fileWriter.write(sorted.get(i).getValue().toString());
-                fileWriter.write("\n");
-            }
-
-        }
-        fileWriter.close();
-
-
     }
 
 
@@ -224,20 +160,14 @@ public class Music163Statistics {
 
         long alldata =
                 userRepository.countAllBySongRecordIsTrue();
-        User user = userRepository.findByCommunityIdAndCommunity(uid, Music163ApiCons.communityName);
+        Music163User user = userRepository.findOne(uid);
 
-        List<String> songids =
-                new ArrayList<>(user.getLoveSongId());
-
+        List<String> songids = new ArrayList<>(user.getLoveSongId());
         Map<String, Integer> recordInfo = user.getSongScore().stream().collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
-
-
-        List<SongRecord> songRecordList = songRecordRepository.findSongRecordsByCommunityIdInAndCommunity(songids, Music163ApiCons.communityName);
-        Map<String, SongRecord> songRecordMap = songRecordList.stream().collect(Collectors.toMap(BaseEntity::getCommunityId, ob -> ob));
-
-        Map<String, Double> IDFmap = songRecordList.stream().collect(Collectors.toMap(ob1 -> ob1.getCommunityId(), ob2 -> recordInfo.get(ob2.getCommunityId())
-                * calculateIDF(alldata, (long) songRecordMap.get(ob2.getCommunityId()).getLoveNum())));
-
+        List<Music163SongRecord> songRecordList = Lists.newArrayList(songRecordRepository.findAll(songids));
+        Map<String, Music163SongRecord> songRecordMap = songRecordList.stream().collect(Collectors.toMap(BaseModel::getId, ob -> ob));
+        Map<String, Double> IDFmap = songRecordList.stream().collect(Collectors.toMap(ob1 -> ob1.getId(), ob2 -> recordInfo.get(ob2.getId())
+                * calculateIDF(alldata, (long) songRecordMap.get(ob2.getId()).getLoveNum())));
 
         Map<String, Double> relativeSong =
                 IDFmap.entrySet().stream().sorted((ob1, ob2) -> {
@@ -246,15 +176,13 @@ public class Music163Statistics {
                     }
                     return -1;
                 }).limit(k).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
         return relativeSong;
     }
 
-    public double calculateIDF(long alldata, long currentdata) {
 
+    public double calculateIDF(long alldata, long currentdata) {
         double f = (double) alldata / (double) currentdata;
         return Math.log(f);
-
     }
 
 

@@ -131,6 +131,15 @@ public class VertxTest {
         } else {
             try {
                 Document document = Jsoup.parse(html);
+                // 听歌总数
+                int songNums = 0;
+                try {
+                    String songNumsInfo =
+                            document.select("#rHeader > h4").get(0).html();
+                    songNums = Integer.parseInt(songNumsInfo.substring(4, songNumsInfo.length() - 1));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 //性别
                 boolean ismale = document.select("#j-name-wrap > i").hasClass("u-icn-01");
                 boolean isfemale = document.select("#j-name-wrap > i").hasClass("u-icn-02");

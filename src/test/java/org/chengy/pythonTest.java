@@ -1,12 +1,10 @@
 package org.chengy;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.assertj.core.util.FloatComparator;
-import org.chengy.infrastructure.music163secret.Music163ApiCons;
-import org.chengy.model.Song;
-import org.chengy.model.User;
-import org.chengy.repository.SongRepository;
-import org.chengy.repository.UserRepository;
+import com.google.common.collect.Lists;
+import org.chengy.newmodel.Music163Song;
+import org.chengy.repository.remote.Music163SongRepository;
+import org.chengy.repository.remote.Music163UserRepository;
 import org.chengy.service.analyzer.SongRecordAnalyzer;
 import org.chengy.service.discovery.Music163Discovery;
 import org.chengy.service.statistics.Music163Statistics;
@@ -19,12 +17,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -46,9 +42,9 @@ public class pythonTest {
     SongRecordAnalyzer songRecordAnalyzer;
 
     @Autowired
-    SongRepository songRepository;
+    Music163SongRepository songRepository;
     @Autowired
-    UserRepository userRepository;
+    Music163UserRepository userRepository;
 
     @Test
     public void loggerTest() {
@@ -61,22 +57,43 @@ public class pythonTest {
 
 
     @Test
+    public void averageScoreTest() {
+        Map<String, Double> map = songRecordAnalyzer.getSongAverageScore(Arrays.asList("440353010"));
+        System.out.println(map);
+    }
+
+    @Test
+    public void newRecommend() throws Exception {
+        Map<String, Double> map = music163Statistics.getUserRelativeSong("252839335", 10);
+        List<Music163Song> songList = Lists.newArrayList(songRepository.findAll(map.keySet()));
+        System.out.println("======tf-idf score======");
+        Map<String, Double> songInfo = songList.stream().collect(Collectors.toMap(ob -> ob.getTitle(), ob -> map.get(ob.getId())));
+        System.out.println(songInfo);
+
+
+    }
+
+
+    @Test
     public void getUserRelativeSongTest() throws Exception {
         Map<String, Double> map = music163Statistics.getUserRelativeSong("330313", 10);
-        List<Song> songList = songRepository.findSongsByCommunityIdInAndCommunity(map.keySet(), Music163ApiCons.communityName);
+        List<Music163Song> songList = Lists.newArrayList(songRepository.findAll(map.keySet()));
 
         Map<String, Double> scoreMap = songRecordAnalyzer.getSongAverageScore(map.keySet());
         System.out.println("======tf-idf score======");
-        Map<String, Double> songInfo = songList.stream().collect(Collectors.toMap(ob -> ob.getTitle(), ob -> map.get(ob.getCommunityId())));
+        Map<String, Double> songInfo = songList.stream().collect(Collectors.toMap(ob -> ob.getTitle(), ob -> map.get(ob.getId())));
         System.out.println(songInfo);
         System.out.println("======average love score======");
-        songInfo = songList.stream().collect(Collectors.toMap(ob -> ob.getTitle(), ob -> scoreMap.get(ob.getCommunityId())));
+        songInfo = songList.stream().collect(Collectors.toMap(ob -> ob.getTitle(), ob -> scoreMap.get(ob.getId())));
         System.out.println(songInfo);
     }
 
     @Test
     public void getSimilarSongsTest() throws JsonProcessingException {
-        System.out.println(music163Discovery.getSimilarSongs("29561077", 20));
+        String songId = "560714133";
+
+        System.out.println(music163Discovery.getSimilarSongs(songId, 20, false));
+        System.out.println(music163Discovery.getSimilarSongs(songId, 20, true));
     }
 
 
@@ -84,12 +101,13 @@ public class pythonTest {
     public void getUserBasedRecommendTest() {
         String uid = "330313";
         System.out.println(env);
-        List<Song> songList = music163Discovery.userBasedRecommend(uid, 200, 20);
+        List<Music163Song> songList = music163Discovery.userBasedRecommend(uid, 200, 20);
         System.out.println("====== user recommend======" + songList);
         songList = music163Discovery.itemBasedRecommend(uid, 200, 80);
         System.out.println("====== item recommend======" + songList);
         songList = music163Discovery.getRecommendSongs(uid, 200, 20);
         System.out.println("====== model recommend======" + songList);
+
     }
 
 
@@ -101,7 +119,7 @@ public class pythonTest {
 
     @Test
     public void testRecommend() {
-        List<Song> songList = music163Discovery.getRecommendSongs("330313", 100, 10);
+        List<Music163Song> songList = music163Discovery.getRecommendSongs("330313", 100, 10);
         System.out.println(songList);
     }
 

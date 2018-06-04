@@ -1,14 +1,13 @@
 package org.chengy.service.analyzer;
 
-import com.oracle.tools.packager.mac.MacAppBundler;
+import com.google.common.collect.Lists;
 import org.apache.commons.lang3.tuple.Pair;
 import org.chengy.infrastructure.music163secret.Music163ApiCons;
 import org.chengy.infrastructure.music163secret.SongRecordFactory;
-import org.chengy.model.SongRecord;
-import org.chengy.model.User;
-import org.chengy.repository.SongRecordRepository;
-import org.chengy.repository.SongRepository;
-import org.chengy.repository.UserRepository;
+import org.chengy.newmodel.Music163SongRecord;
+import org.chengy.newmodel.Music163User;
+import org.chengy.repository.remote.Music163SongRecordRepository;
+import org.chengy.repository.remote.Music163UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -19,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -28,9 +28,9 @@ import java.util.stream.Collectors;
 public class SongRecordAnalyzer {
 
     @Autowired
-    UserRepository userRepository;
+    Music163UserRepository userRepository;
     @Autowired
-    SongRecordRepository songRecordRepository;
+    Music163SongRecordRepository songRecordRepository;
 
     @Autowired
     @Qualifier("songExecutor")
@@ -40,23 +40,23 @@ public class SongRecordAnalyzer {
         int pageIndex = 0;
         int pageSize = 100;
         Pageable pageable = new PageRequest(pageIndex, pageSize);
-        List<User> userList = userRepository.findAll(pageable).getContent();
+        List<Music163User> userList = userRepository.findAll(pageable).getContent();
 
         while (userList.size() > 0) {
             userList = userList.stream().filter(ob -> ob.getLoveSongId().size() > 0).collect(Collectors.toList());
-            List<String> userIds = userList.stream().filter(ob -> ob.getSongRecord() == null || !ob.getSongRecord()).map(ob -> ob.getCommunityId()).collect(Collectors.toList());
+            List<String> userIds = userList.stream().filter(ob -> ob.getSongRecord() == null || !ob.getSongRecord()).map(ob -> ob.getId()).collect(Collectors.toList());
             for (String uid : userIds) {
                 Runnable runnable = new Runnable() {
                     @Override
                     public void run() {
                         try {
-                            getSongRecord(uid);
-                            System.out.println("get uid " + uid + " song record info success");
+                            saveUserSongRecord(uid);
+                            System.out.println("save uid " + uid + " song record info success");
                         } catch (Exception e) {
                             e.printStackTrace();
-                            System.out.println("get uid " + uid + " song record info failed");
-                            User user =
-                                    userRepository.findByCommunityIdAndCommunity(uid, Music163ApiCons.communityName);
+                            System.out.println("save uid " + uid + " song record info failed");
+                            Music163User user =
+                                    userRepository.findOne(uid);
                             user.setSongRecord(false);
                             userRepository.save(user);
                         }
@@ -75,14 +75,14 @@ public class SongRecordAnalyzer {
 
 
     /**
-     * 记录歌曲信息
+     * 记录用户的歌曲信息
      *
      * @param userid
      * @throws Exception
      */
-    public void getSongRecord(String userid) throws Exception {
+    public void saveUserSongRecord(String userid) throws Exception {
 
-        User user = userRepository.findByCommunityIdAndCommunity(userid, Music163ApiCons.communityName);
+        Music163User user = userRepository.findOne(userid);
         if (user.getSongRecord() != null) {
             return;
         }
@@ -91,11 +91,10 @@ public class SongRecordAnalyzer {
         List<Pair<String, Integer>> recordInfo = user.getSongScore();
 
         for (Pair<String, Integer> pair : recordInfo) {
-            SongRecord songRecord =
-                    songRecordRepository.findSongRecordByCommunityIdAndCommunity(pair.getKey(), Music163ApiCons.communityName);
-
+            Music163SongRecord songRecord =
+                    songRecordRepository.findOne(pair.getKey());
             if (songRecord == null) {
-                SongRecord newSongRecord = SongRecordFactory.buildSongRecord(pair.getKey(), Music163ApiCons.communityName, 1, (long) pair.getValue(), userid);
+                Music163SongRecord newSongRecord = SongRecordFactory.buildMusic163SongRecord(pair.getKey(), Music163ApiCons.communityName, 1, (long) pair.getValue(), userid);
                 songRecordRepository.save(newSongRecord);
             } else {
                 try {
@@ -105,14 +104,12 @@ public class SongRecordAnalyzer {
                     songRecordRepository.save(songRecord);
                 } catch (OptimisticLockingFailureException e) {
                     System.out.println("retry update songRecord");
-
-                    songRecord = songRecordRepository.findSongRecordByCommunityIdAndCommunity(songRecord.getCommunityId(), Music163ApiCons.communityName);
+                    songRecord = songRecordRepository.findOne(songRecord.getId());
                     songRecord.setScore(songRecord.getScore() + pair.getValue());
                     songRecord.setLoveNum(songRecord.getLoveNum() + 1);
                     songRecord.getLoverIds().add(userid);
                     songRecordRepository.save(songRecord);
                 }
-
             }
         }
 
@@ -123,16 +120,18 @@ public class SongRecordAnalyzer {
 
     /**
      * 歌曲的平均得分
+     *
      * @param songIds
      * @return
      */
     public Map<String, Double> getSongAverageScore(Collection<String> songIds) {
 
-        List<SongRecord> songRecordList = songRecordRepository.findSongRecordsByCommunityIdInAndCommunity(songIds, Music163ApiCons.communityName);
-        Map<String, Double> map = songRecordList.stream().collect(Collectors.toMap(ob -> ob.getCommunityId(), ob -> {
+        Iterator<Music163SongRecord> songRecordIterator = songRecordRepository.findAll(songIds).iterator();
+        List<Music163SongRecord> songRecordList = Lists.newArrayList(songRecordIterator);
+        Map<String, Double> map = songRecordList.stream().collect(Collectors.toMap(ob -> ob.getId(), ob -> {
             int loveNums = ob.getLoveNum();
             Long sumScore = ob.getScore();
-            return  new BigDecimal(sumScore).divide(new BigDecimal(loveNums),5,BigDecimal.ROUND_HALF_DOWN).doubleValue();
+            return new BigDecimal(sumScore).divide(new BigDecimal(loveNums), 5, BigDecimal.ROUND_HALF_DOWN).doubleValue();
         }));
         return map;
     }

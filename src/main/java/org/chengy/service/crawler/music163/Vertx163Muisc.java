@@ -2,27 +2,21 @@ package org.chengy.service.crawler.music163;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.netty.channel.ConnectTimeoutException;
-import io.netty.handler.timeout.TimeoutException;
 import io.vertx.core.MultiMap;
-import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.net.ProxyOptions;
 import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
-import io.vertx.ext.web.client.WebClientOptions;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.chengy.configuration.CrawlerBizConfig;
-import org.chengy.core.HttpHelper;
 import org.chengy.infrastructure.music163secret.*;
-import org.chengy.model.Song;
-import org.chengy.model.User;
-import org.chengy.repository.SongRepository;
-import org.chengy.repository.UserRepository;
+import org.chengy.newmodel.Music163Song;
+import org.chengy.newmodel.Music163User;
+import org.chengy.repository.remote.Music163SongRepository;
+import org.chengy.repository.remote.Music163UserRepository;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -38,7 +32,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -53,10 +46,10 @@ public class Vertx163Muisc {
     public static Logger LOGGER = LoggerFactory.getLogger(Vertx163Muisc.class);
 
     @Autowired
-    private UserRepository userRepository;
+    private Music163UserRepository userRepository;
 
     @Autowired
-    private SongRepository songRepository;
+    private Music163SongRepository songRepository;
 
     @Autowired
     Music163Filter filter;
@@ -110,7 +103,7 @@ public class Vertx163Muisc {
                                 uidQueue.addAll(crawlerInfo.getRelativeIds());
                             }
                             if (crawlerInfo.getUser() != null && !userExit) {
-                                User user = crawlerInfo.getUser();
+                                Music163User user = crawlerInfo.getUser();
                                 List<Pair<String, Integer>> songInfo = crawlerInfo.getLoveSongs();
                                 List<String> songIds = songInfo.stream()
                                         .map(Pair::getLeft).collect(Collectors.toList());
@@ -140,7 +133,7 @@ public class Vertx163Muisc {
             try {
                 uids = relativeUserIds.get();
             } catch (InterruptedException | ExecutionException e) {
-                System.out.println(e.getMessage());
+                LOGGER.error("get relative user error" + e.getMessage(), e);
             }
             return new CrawlerInfo(null, uids);
         }
@@ -148,11 +141,11 @@ public class Vertx163Muisc {
         CompletableFuture<String> futureHomeHtml = getFutureHomeHtml(uid);
 
         CompletableFuture<List<Pair<String, Integer>>> songInfoFuture = getLoveSongs(uid);
-        CompletableFuture<User> userInfoCompletableFuture = new CompletableFuture<>();
+        CompletableFuture<Music163User> userInfoCompletableFuture = new CompletableFuture<>();
         futureHomeHtml.whenCompleteAsync((html, t) -> extractUserInfo(uid, html, t, userInfoCompletableFuture), executorService);
 
         List<String> relaUserIds;
-        User user = null;
+        Music163User user = null;
         List<Pair<String, Integer>> songInfos = new ArrayList<>();
         try {
             relaUserIds = relativeUserIds.get(3000, TimeUnit.MILLISECONDS);
@@ -163,11 +156,19 @@ public class Vertx163Muisc {
             user = userInfoCompletableFuture.get(3000, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             LOGGER.info("crawler user " + uid + "failed", e);
+            if (e.getCause() instanceof IllegalStateException) {
+                clientThreadLocal.set(vertxClientFactory.newWebClientWithProxy());
+                return getCrawlerInfo(uid, relativeUser, userExit);
+            }
         }
         try {
             songInfos = songInfoFuture.get(3000, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             LOGGER.info("get user " + uid + "love songs failed", e);
+            if (e.getCause() instanceof IllegalStateException) {
+                clientThreadLocal.set(vertxClientFactory.newWebClientWithProxy());
+                return getCrawlerInfo(uid, relativeUser, userExit);
+            }
         }
 
         CrawlerInfo crawlerInfo = new CrawlerInfo(user, relaUserIds);
@@ -193,13 +194,22 @@ public class Vertx163Muisc {
      * @param t
      * @param userCompletableFuture
      */
-    private void extractUserInfo(String id, String html, Throwable t, CompletableFuture<User> userCompletableFuture) {
+    private void extractUserInfo(String id, String html, Throwable t, CompletableFuture<Music163User> userCompletableFuture) {
         if (t != null) {
             userCompletableFuture.completeExceptionally(t);
 
         } else {
             try {
                 Document document = Jsoup.parse(html);
+                // 听歌总数
+                int songNums = 0;
+                try {
+                    String songNumsInfo =
+                            document.select("#rHeader > h4").get(0).html();
+                    songNums = Integer.parseInt(songNumsInfo.substring(4, songNumsInfo.length() - 1));
+                } catch (Exception e) {
+                    LOGGER.warn("获取用户 " + id + " 听歌数量失败");
+                }
                 //性别
                 boolean ismale = document.select("#j-name-wrap > i").hasClass("u-icn-01");
                 boolean isfemale = document.select("#j-name-wrap > i").hasClass("u-icn-02");
@@ -240,7 +250,7 @@ public class Vertx163Muisc {
                     }
                 }
                 String avatar = document.select("#ava > img").attr("src");
-                User user = UserFactory.buildUser(age, area, name, avatar, id, signature, gender);
+                Music163User user = UserFactory.buildMusic163User(age, area, name, avatar, id, signature, gender, songNums);
                 System.out.println(user);
                 userCompletableFuture.complete(user);
             } catch (Exception e) {
@@ -269,36 +279,45 @@ public class Vertx163Muisc {
             List<String> relativeIds = new ArrayList<>();
 
             fansFutureJsonStr.whenCompleteAsync((jsonStr, t) -> {
-                        try {
-                            JsonNode root = objectMapper.readTree(jsonStr);
-                            List<JsonNode> jsonNodeList =
-                                    root.findValue("followeds").findValues("userId");
-                            List<String> ids =
-                                    jsonNodeList.stream().map(JsonNode::asText).collect(Collectors.toList());
-                            relativeIds.addAll(ids);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        } finally {
-                            if (steps.getAndIncrement() == 1) {
-                                completableFuture.complete(relativeIds);
+                        if (t != null) {
+                            completableFuture.completeExceptionally(t.getCause());
+                        } else {
+                            try {
+                                JsonNode root = objectMapper.readTree(jsonStr);
+                                List<JsonNode> jsonNodeList =
+                                        root.findValue("followeds").findValues("userId");
+                                List<String> ids =
+                                        jsonNodeList.stream().map(JsonNode::asText).collect(Collectors.toList());
+                                relativeIds.addAll(ids);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            } finally {
+                                if (steps.getAndIncrement() == 1) {
+                                    completableFuture.complete(relativeIds);
+                                }
                             }
                         }
+
                     }
             );
 
             followedFutureJsonStr.whenCompleteAsync((jsonStr, t) -> {
-                        try {
-                            JsonNode root = objectMapper.readTree(jsonStr);
-                            List<JsonNode> jsonNodeList =
-                                    root.findValue("follow").findValues("userId");
-                            List<String> ids =
-                                    jsonNodeList.stream().map(JsonNode::asText).collect(Collectors.toList());
-                            relativeIds.addAll(ids);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        } finally {
-                            if (steps.getAndIncrement() == 1) {
-                                completableFuture.complete(relativeIds);
+                        if (t != null) {
+                            completableFuture.completeExceptionally(t.getCause());
+                        } else {
+                            try {
+                                JsonNode root = objectMapper.readTree(jsonStr);
+                                List<JsonNode> jsonNodeList =
+                                        root.findValue("follow").findValues("userId");
+                                List<String> ids =
+                                        jsonNodeList.stream().map(JsonNode::asText).collect(Collectors.toList());
+                                relativeIds.addAll(ids);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            } finally {
+                                if (steps.getAndIncrement() == 1) {
+                                    completableFuture.complete(relativeIds);
+                                }
                             }
                         }
                     }
@@ -325,7 +344,7 @@ public class Vertx163Muisc {
             ObjectMapper objectMapper = new ObjectMapper();
             songJsonStr.whenCompleteAsync((jsonStr, t) -> {
                 if (t != null) {
-                    res.completeExceptionally(t);
+                    res.completeExceptionally(t.getCause());
                 } else {
                     try {
                         List<Pair<String, Integer>> pairList = new ArrayList<>();
@@ -337,6 +356,7 @@ public class Vertx163Muisc {
                         });
                         res.complete(pairList);
                     } catch (Exception e) {
+                        LOGGER.error("get user love song failed" + jsonStr, e);
                         res.completeExceptionally(e);
                     }
                 }
@@ -359,7 +379,6 @@ public class Vertx163Muisc {
      */
     private CompletableFuture<String> commonWebAPI(String text, String url) {
         WebClient webClient = clientThreadLocal.get();
-        AtomicReference<Boolean> proxySwitch = new AtomicReference<>(false);
 
         CompletableFuture<String> completableFuture = new CompletableFuture<>();
         try {
@@ -374,28 +393,22 @@ public class Vertx163Muisc {
                 if (ar.succeeded()) {
                     HttpResponse<Buffer> response = ar.result();
                     if (response.statusCode() == 503) {
-                        proxySwitch.set(true);
+                        completableFuture.completeExceptionally(new IllegalStateException("ip has been temporarily bloked"));
                     }
                     if (response.statusCode() == 200) {
-                        String html =
-                                response.body().toString(StandardCharsets.UTF_8);
-                        if (html.contains("cheating")) {
-                            proxySwitch.set(true);
+                        String html = response.body().toString(StandardCharsets.UTF_8);
+                        if (html.contains("Cheating")) {
+                            completableFuture.completeExceptionally(new IllegalStateException("ip has been temporarily bloked"));
+                        } else {
+                            completableFuture.complete(html);
                         }
-                        completableFuture.complete(html);
+                    } else {
+                        completableFuture.completeExceptionally(new IllegalStateException("http response is " + response.statusCode()));
                     }
-                    completableFuture.complete(response.statusCode() + "");
                 }
             });
         } catch (Exception e) {
             completableFuture.completeExceptionally(e);
-        }
-        if (proxySwitch.get()) {
-            return commonWebAPI(text, url);
-        }
-        if (proxySwitch.get()) {
-            clientThreadLocal.set(vertxClientFactory.newWebClientWithProxy());
-            return commonWebAPI(text, url);
         }
         return completableFuture;
     }
@@ -411,46 +424,44 @@ public class Vertx163Muisc {
         WebClient webClient = clientThreadLocal.get();
         HttpRequest<Buffer> request = webClient.requestAbs(HttpMethod.GET, absUrl);
         CompletableFuture<String> futureHtml = new CompletableFuture<>();
-        AtomicReference<Boolean> proxySwitch = new AtomicReference<>(false);
         request.send(ar -> {
             if (ar.succeeded()) {
                 HttpResponse<Buffer> response = ar.result();
                 if (response.statusCode() == 503) {
-                    proxySwitch.set(true);
+                    futureHtml.completeExceptionally(new IllegalStateException("ip has been temporarily bloked"));
                 }
                 if (response.statusCode() == 200) {
                     String html = response.body().toString(StandardCharsets.UTF_8);
                     if (html.contains("你要查找的网页找不到")) {
-                        proxySwitch.set(true);
+                        futureHtml.completeExceptionally(new IllegalStateException("ip has been temporarily bloked"));
+                    } else {
+                        futureHtml.complete(html);
                     }
-                    futureHtml.complete(html);
+                } else {
+                    futureHtml.completeExceptionally(new IllegalStateException("http response is " + response.statusCode()));
                 }
-                futureHtml.complete(response.statusCode() + "");
             } else if (ar.failed()) {
                 futureHtml.completeExceptionally(ar.cause());
             }
         });
 
-        if (proxySwitch.get()) {
-            clientThreadLocal.set(vertxClientFactory.newWebClientWithProxy());
-            return getHtml(absUrl);
-        }
+
         return futureHtml;
 
 
     }
 
     class CrawlerInfo {
-        private User user;
+        private Music163User user;
         private List<String> relativeIds;
         private List<Pair<String, Integer>> loveSongs;
 
 
-        public User getUser() {
+        public Music163User getUser() {
             return user;
         }
 
-        public void setUser(User user) {
+        public void setUser(Music163User user) {
             this.user = user;
         }
 
@@ -462,7 +473,7 @@ public class Vertx163Muisc {
             this.relativeIds = relativeIds;
         }
 
-        public CrawlerInfo(User user, List<String> relativeIds) {
+        public CrawlerInfo(Music163User user, List<String> relativeIds) {
             this.user = user;
             this.relativeIds = relativeIds;
         }
@@ -480,7 +491,7 @@ public class Vertx163Muisc {
 
     public void getSongInfo(String songId) throws Exception {
 
-        Song exitSong = songRepository.findSongByCommunityIdAndCommunity(songId, Music163ApiCons.communityName);
+        Music163Song exitSong = songRepository.findOne(songId);
         if (exitSong != null) {
             return;
         }
@@ -543,11 +554,11 @@ public class Vertx163Muisc {
                 lyricist = matcher.group().split(":")[1].trim();
             }
 
-            Song song = SongFactory.buildSong(songId, lyric, arts, albumTitle, albumId, title, composer, lyricist);
+            Music163Song song = SongFactory.buildMusic163Song(songId, lyric, arts, albumTitle, albumId, title, composer, lyricist);
             System.out.println(song);
             songRepository.save(song);
         } catch (Exception e) {
-            Song song = SongFactory.buildSong(songId, "", arts, albumTitle, albumId, title, "", "");
+            Music163Song song = SongFactory.buildMusic163Song(songId, "", arts, albumTitle, albumId, title, "", "");
             System.out.println(song);
             songRepository.save(song);
         }

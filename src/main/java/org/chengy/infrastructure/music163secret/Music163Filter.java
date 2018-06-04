@@ -1,23 +1,16 @@
 package org.chengy.infrastructure.music163secret;
 
 
-import com.google.common.hash.BloomFilter;
-import com.google.common.hash.Funnels;
-import io.vertx.core.impl.ConcurrentHashSet;
-import org.chengy.model.User;
-import org.chengy.repository.UserRepository;
-import org.chengy.repository.matcher.UserMatcherFactory;
+import org.chengy.repository.remote.Music163UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Example;
-import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.BitSet;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 
@@ -32,8 +25,10 @@ public class Music163Filter {
     private BitSet bitSet = new BitSet();
 
 
+    private ConcurrentHashMap<Integer,Object> concurrentHashMap=new ConcurrentHashMap<>();
+
     @Autowired
-    UserRepository userRepository;
+    Music163UserRepository userRepository;
 
     @Value("${profile}")
     String env;
@@ -41,7 +36,7 @@ public class Music163Filter {
     @PostConstruct
     public void init() {
         //做一个开关
-        if (!env.equals("test")){
+        if (!env.equals("test")) {
             loadDbData();
             System.out.println("init filter success");
         }
@@ -52,15 +47,17 @@ public class Music163Filter {
 
         int pageId = 0;
         int pageSize = 10000;
-        Example<User> userExample = UserMatcherFactory.music163BasicUserMatcher();
-        List<Integer> uids = userRepository.findAll(userExample, new PageRequest(pageId++, pageSize)).getContent()
-                .stream().map(ob -> Integer.valueOf(ob.getCommunityId())).collect(Collectors.toList());
+
+
+        List<Integer> uids = userRepository.findAll(new PageRequest(pageId, pageSize)).getContent().stream()
+                .map(ob -> Integer.valueOf(ob.getId())).collect(Collectors.toList());
+
         while (uids.size() > 0) {
             for (Integer uid : uids) {
                 putUid(uid);
             }
-            uids = userRepository.findAll(userExample, new PageRequest(pageId++, pageSize)).getContent()
-                    .stream().map(ob -> Integer.valueOf(ob.getCommunityId())).collect(Collectors.toList());
+            uids = userRepository.findAll(new PageRequest(pageId++, pageSize)).getContent()
+                    .stream().map(ob -> Integer.valueOf(ob.getId())).collect(Collectors.toList());
         }
         System.out.println("load user data to filter finished");
     }

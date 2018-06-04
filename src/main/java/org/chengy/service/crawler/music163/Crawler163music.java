@@ -7,13 +7,15 @@ import org.chengy.infrastructure.music163secret.EncryptTools;
 import org.chengy.infrastructure.music163secret.Music163ApiCons;
 import org.chengy.infrastructure.music163secret.SongFactory;
 import org.chengy.infrastructure.music163secret.UserFactory;
-import org.chengy.model.Song;
-import org.chengy.model.User;
-import org.chengy.repository.SongRepository;
-import org.chengy.repository.UserRepository;
+import org.chengy.newmodel.Music163Song;
+import org.chengy.newmodel.Music163User;
+import org.chengy.repository.remote.Music163SongRepository;
+import org.chengy.repository.remote.Music163UserRepository;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
@@ -28,245 +30,252 @@ import java.util.stream.Collectors;
  */
 @Service
 public class Crawler163music {
-	@Autowired
-	private UserRepository userRepository;
-	@Autowired
-	private SongRepository songRepository;
 
-	@Autowired
-	private ObjectMapper objectMapper;
-	@Autowired
-	MongoTemplate mongoTemplate;
+    private static final Logger LOGGER = LoggerFactory.getLogger(Crawler163music.class);
 
-	public void getUserInfo(List<String> startIds) {
-		LinkedList<String> ids = new LinkedList<>();
-		ids.addAll(startIds);
-		while (ids.size() > 0) {
-			try {
-				String id = ids.peek();
-				if (ids.size() < 1000) {
-					List<String> fansIds = getFansId(id);
-					List<String> followedIds = getFollowedId(id);
-					ids.addAll(fansIds);
-					ids.addAll(followedIds);
-				}
-				User exituser =
-						userRepository.findByCommunityIdAndCommunity(id, Music163ApiCons.communityName);
-				if (exituser != null) {
-					continue;
-				}
+    @Autowired
+    private Music163UserRepository userRepository;
+    @Autowired
+    private Music163SongRepository songRepository;
 
-				String html = HttpHelper.get(Music163ApiCons.Music163UserHost + id);
-				Document document = Jsoup.parse(html);
-				//性别
-				boolean ismale = document.select("#j-name-wrap > i").hasClass("u-icn-01");
-				boolean isfemale = document.select("#j-name-wrap > i").hasClass("u-icn-02");
-				int gender = 0;
-				if (ismale) {
-					gender = 1;
-				} else if (isfemale) {
-					gender = 2;
-				}
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
+    MongoTemplate mongoTemplate;
 
-				String name = document.select("#j-name-wrap > span.tit.f-ff2.s-fc0.f-thide").get(0).html();
-				//个性签名
-				Elements signatureinfo = document.select("#head-box > dd > div.inf.s-fc3.f-brk");
-				String signature = "";
-				if (signatureinfo.size() > 0) {
-					signature = signatureinfo.get(0).html().split("：")[1];
-				}
-				//年龄
-				Elements ageinfo = document.select("#age");
-				Date age = null;
-				if (ageinfo.size() > 0) {
-					age = new Date(Long.parseLong(ageinfo.get(0).attr("data-age")));
-				}
+    public void getUserInfo(List<String> startIds) {
+        LinkedList<String> ids = new LinkedList<>();
+        ids.addAll(startIds);
+        while (ids.size() > 0) {
+            try {
+                String id = ids.peek();
+                if (ids.size() < 1000) {
+                    List<String> fansIds = getFansId(id);
+                    List<String> followedIds = getFollowedId(id);
+                    ids.addAll(fansIds);
+                    ids.addAll(followedIds);
+                }
+                Music163User exituser =
+                        userRepository.findOne(id);
+                if (exituser != null) {
+                    continue;
+                }
 
-				//地区的代码逻辑
-				Elements elements = document.select("#head-box > dd > div:nth-child(4) > span:nth-child(1)");
-				String area = "";
-				if (elements.size() > 0) {
-					try {
-						area = elements.get(0).html().split("：")[1];
-					} catch (Exception e) {
+                String html = HttpHelper.get(Music163ApiCons.Music163UserHost + id);
+                Document document = Jsoup.parse(html);
 
-						elements = document.select("#head-box > dd > div:nth-child(3) > span:nth-child(1)");
-						area = elements.get(0).html().split("：")[1];
-					}
-				} else {
-					elements = document.select("#head-box > dd > div.inf.s-fc3 > span");
-					if (elements.size() > 0) {
-						area = elements.get(0).html().split("：")[1];
-					}
-				}
+                // 听歌总数
+                int songNums = 0;
+                try {
+                    String songNumsInfo =
+                            document.select("#rHeader > h4").get(0).html();
+                    songNums = Integer.parseInt(songNumsInfo.substring(4, songNumsInfo.length() - 1));
+                } catch (Exception e) {
+                    LOGGER.warn("获取用户 " + id + " 听歌数量失败");
+                }
 
-				String avatar = document.select("#ava > img").attr("src");
-				User user = UserFactory.buildUser(age, area, name, avatar, id, signature, gender);
-				System.out.println(user);
-				List<String> songIds = getUserLikeSong(id);
-				user.setLoveSongId(songIds);
+                //性别
+                boolean ismale = document.select("#j-name-wrap > i").hasClass("u-icn-01");
+                boolean isfemale = document.select("#j-name-wrap > i").hasClass("u-icn-02");
+                int gender = 0;
+                if (ismale) {
+                    gender = 1;
+                } else if (isfemale) {
+                    gender = 2;
+                }
 
-				userRepository.save(user);
-				System.out.println("save user succeed:" + user.getCommunityId());
+                String name = document.select("#j-name-wrap > span.tit.f-ff2.s-fc0.f-thide").get(0).html();
+                //个性签名
+                Elements signatureinfo = document.select("#head-box > dd > div.inf.s-fc3.f-brk");
+                String signature = "";
+                if (signatureinfo.size() > 0) {
+                    signature = signatureinfo.get(0).html().split("：")[1];
+                }
+                //年龄
+                Elements ageinfo = document.select("#age");
+                Date age = null;
+                if (ageinfo.size() > 0) {
+                    age = new Date(Long.parseLong(ageinfo.get(0).attr("data-age")));
+                }
 
-			} catch (Exception e) {
-				System.out.println(ids.get(0) + " get info failed");
-				e.printStackTrace();
-			} finally {
-				ids.poll();
-			}
-		}
+                //地区的代码逻辑
+                Elements elements = document.select("#head-box > dd > div:nth-child(4) > span:nth-child(1)");
+                String area = "";
+                if (elements.size() > 0) {
+                    try {
+                        area = elements.get(0).html().split("：")[1];
+                    } catch (Exception e) {
 
-	}
+                        elements = document.select("#head-box > dd > div:nth-child(3) > span:nth-child(1)");
+                        area = elements.get(0).html().split("：")[1];
+                    }
+                } else {
+                    elements = document.select("#head-box > dd > div.inf.s-fc3 > span");
+                    if (elements.size() > 0) {
+                        area = elements.get(0).html().split("：")[1];
+                    }
+                }
 
-	public List<String> getFansId(String uid) throws Exception {
+                String avatar = document.select("#ava > img").attr("src");
+                Music163User user = UserFactory.buildMusic163User(age, area, name, avatar, id, signature, gender, songNums);
+                System.out.println(user);
+                List<String> songIds = getUserLikeSong(id);
+                user.setLoveSongId(songIds);
 
-		String fansParam = Music163ApiCons.getFansParams(uid, 1, 100);
-		Document document = EncryptTools.commentAPI(fansParam, Music163ApiCons.fansUrl);
-		JsonNode root = objectMapper.readTree(document.text());
-		List<JsonNode> jsonNodeList =
-				root.findValue("followeds").findValues("userId");
+                userRepository.save(user);
+                System.out.println("save m163 user succeed:" + user.getId());
 
-		List<String> ids =
-				jsonNodeList.stream().map(JsonNode::asText).collect(Collectors.toList());
+            } catch (Exception e) {
+                System.out.println(ids.get(0) + " get info failed");
+                e.printStackTrace();
+            } finally {
+                ids.poll();
+            }
+        }
 
-		return ids;
-	}
+    }
 
-	public List<String> getFollowedId(String uid) throws Exception {
-		String followedParam = Music163ApiCons.getFollowedParams(uid, 1, 30);
-		Document document = EncryptTools.commentAPI(followedParam, Music163ApiCons.getFollowedUrl(uid));
+    public List<String> getFansId(String uid) throws Exception {
 
-		JsonNode root = objectMapper.readTree(document.text());
+        String fansParam = Music163ApiCons.getFansParams(uid, 1, 100);
+        Document document = EncryptTools.commentAPI(fansParam, Music163ApiCons.fansUrl);
+        JsonNode root = objectMapper.readTree(document.text());
+        List<JsonNode> jsonNodeList =
+                root.findValue("followeds").findValues("userId");
 
-		List<String> ids =
-				root.findValue("follow").findValues("userId").stream().map(ob -> ob.asText()).collect(Collectors.toList());
-		return ids;
-	}
+        List<String> ids =
+                jsonNodeList.stream().map(JsonNode::asText).collect(Collectors.toList());
 
-	public List<String> getUserLikeSong(String uid) throws Exception {
-		List<String> songIds = new ArrayList<>();
-		try {
-			String songRecordParam = Music163ApiCons.getSongRecordALLParams(uid, 1, 100);
-			Document document = EncryptTools.commentAPI(songRecordParam, Music163ApiCons.songRecordUrl);
-			JsonNode root = objectMapper.readTree(document.text());
-			songIds =
-					root.findValue("allData").findValues("song").stream()
-							.map(ob -> ob.get("id").asText()).collect(Collectors.toList());
+        return ids;
+    }
 
-			System.out.println(songIds);
-		} catch (Exception e) {
-			System.out.println("get like song failed:" + uid);
-		}
-		return songIds;
-	}
+    public List<String> getFollowedId(String uid) throws Exception {
+        String followedParam = Music163ApiCons.getFollowedParams(uid, 1, 30);
+        Document document = EncryptTools.commentAPI(followedParam, Music163ApiCons.getFollowedUrl(uid));
 
-	/**
-	 * 获取用户最近在听的歌曲
-	 *
-	 * @param uid 用户id
-	 * @throws Exception
-	 */
-	public List<String> getUserRecentSong(String uid) throws Exception {
-		List<String> songIds = new ArrayList<>();
+        JsonNode root = objectMapper.readTree(document.text());
 
-		String songRecordWeek = Music163ApiCons.getSongRecordofWeek(uid, 1, 100);
-		Document document = EncryptTools.commentAPI(songRecordWeek, Music163ApiCons.songRecordUrl);
-		JsonNode root = objectMapper.readTree(document.text());
-		songIds =
-				root.findValue("weekData").findValues("song").stream()
-						.map(ob -> ob.get("id").asText()).collect(Collectors.toList());
-		return songIds;
-	}
+        List<String> ids =
+                root.findValue("follow").findValues("userId").stream().map(ob -> ob.asText()).collect(Collectors.toList());
+        return ids;
+    }
 
-	public void getSongInfo(String songId) throws Exception {
+    public List<String> getUserLikeSong(String uid) throws Exception {
+        List<String> songIds = new ArrayList<>();
+        try {
+            String songRecordParam = Music163ApiCons.getSongRecordALLParams(uid, 1, 100);
+            Document document = EncryptTools.commentAPI(songRecordParam, Music163ApiCons.songRecordUrl);
+            JsonNode root = objectMapper.readTree(document.text());
+            songIds =
+                    root.findValue("allData").findValues("song").stream()
+                            .map(ob -> ob.get("id").asText()).collect(Collectors.toList());
 
-		Song exitSong = songRepository.findSongByCommunityIdAndCommunity(songId, Music163ApiCons.communityName);
-		if (exitSong != null) {
-			return;
-		}
-		String html =
-				HttpHelper.get(Music163ApiCons.songHostUrl + songId);
-		Document document = Jsoup.parse(html);
+            System.out.println(songIds);
+        } catch (Exception e) {
+            System.out.println("get like song failed:" + uid);
+        }
+        return songIds;
+    }
 
-		Elements titleEle = document.select("body > div.g-bd4.f-cb > div.g-mn4 > div > div > div.m-lycifo > div.f-cb > div.cnt > div.hd > div > em");
-		String title = titleEle.get(0).html();
-		Elements artsELes = document.select("body > div.g-bd4.f-cb > div.g-mn4 > div > div > div.m-lycifo > div.f-cb > div.cnt > p:nth-child(2)");
-		String art = artsELes.text().split("：")[1].trim();
+    /**
+     * 获取用户最近在听的歌曲
+     *
+     * @param uid 用户id
+     * @throws Exception
+     */
+    public List<String> getUserRecentSong(String uid) throws Exception {
+        List<String> songIds = new ArrayList<>();
 
-		Elements albumEle = document.select("body > div.g-bd4.f-cb > div.g-mn4 > div > div > div.m-lycifo > div.f-cb > div.cnt > p:nth-child(3) > a");
-		String albumTitle = albumEle.get(0).html();
-		String albumId = albumEle.get(0).attr("href").split("id=")[1];
+        String songRecordWeek = Music163ApiCons.getSongRecordofWeek(uid, 1, 100);
+        Document document = EncryptTools.commentAPI(songRecordWeek, Music163ApiCons.songRecordUrl);
+        JsonNode root = objectMapper.readTree(document.text());
+        songIds =
+                root.findValue("weekData").findValues("song").stream()
+                        .map(ob -> ob.get("id").asText()).collect(Collectors.toList());
+        return songIds;
+    }
 
-		List<String> arts = new ArrayList<>();
-		Arrays.asList(art.split("/")).forEach(ob -> arts.add(ob.trim()));
+    public void getSongInfo(String songId) throws Exception {
 
-		String lyric = getLyric(songId);
-		ObjectMapper objectMapper = new ObjectMapper();
+        Music163Song exitSong = songRepository.findOne(songId);
+        if (exitSong != null) {
+            return;
+        }
+        String html =
+                HttpHelper.get(Music163ApiCons.songHostUrl + songId);
+        Document document = Jsoup.parse(html);
 
-		JsonNode root = objectMapper.readTree(lyric);
-		try {
-			try {
-				lyric = root.findValue("lrc").findValue("lyric").asText();
-			} catch (Exception e) {
-				lyric = root.findValue("tlyric").findValue("lyric").asText();
-			}
-			String composer = "";
-			String pattern = "作曲 : .*?\n";
-			Pattern r = Pattern.compile(pattern);
-			Matcher matcher = r.matcher(lyric);
-			while (matcher.find()) {
-				composer = matcher.group().split(":")[1].trim();
-			}
+        Elements titleEle = document.select("body > div.g-bd4.f-cb > div.g-mn4 > div > div > div.m-lycifo > div.f-cb > div.cnt > div.hd > div > em");
+        String title = titleEle.get(0).html();
+        Elements artsELes = document.select("body > div.g-bd4.f-cb > div.g-mn4 > div > div > div.m-lycifo > div.f-cb > div.cnt > p:nth-child(2)");
+        String art = artsELes.text().split("：")[1].trim();
 
-			String lyricist = "";
-			pattern = "作词 : .*?\n";
-			r = Pattern.compile(pattern);
-			matcher = r.matcher(lyric);
-			while (matcher.find()) {
-				lyricist = matcher.group().split(":")[1].trim();
-			}
+        Elements albumEle = document.select("body > div.g-bd4.f-cb > div.g-mn4 > div > div > div.m-lycifo > div.f-cb > div.cnt > p:nth-child(3) > a");
+        String albumTitle = albumEle.get(0).html();
+        String albumId = albumEle.get(0).attr("href").split("id=")[1];
 
-			Song song = SongFactory.buildSong(songId, lyric, arts, albumTitle, albumId, title, composer, lyricist);
-			System.out.println(song);
-			songRepository.save(song);
-		} catch (Exception e) {
-			Song song = SongFactory.buildSong(songId, "", arts, albumTitle, albumId, title, "", "");
-			System.out.println(song);
-			songRepository.save(song);
-		}
+        List<String> arts = new ArrayList<>();
+        Arrays.asList(art.split("/")).forEach(ob -> arts.add(ob.trim()));
 
-	}
+        String lyric = getLyric(songId);
+        ObjectMapper objectMapper = new ObjectMapper();
 
-	public String getLyric(String songId) throws Exception {
-		String params = Music163ApiCons.getLyricParams(songId);
-		System.out.println(params);
-		String lyricUrl = Music163ApiCons.lyricUrl;
-		Document document = EncryptTools.commentAPI(params, lyricUrl);
-		return document.text();
-	}
+        JsonNode root = objectMapper.readTree(lyric);
+        try {
+            try {
+                lyric = root.findValue("lrc").findValue("lyric").asText();
+            } catch (Exception e) {
+                lyric = root.findValue("tlyric").findValue("lyric").asText();
+            }
+            String composer = "";
+            String pattern = "作曲 : .*?\n";
+            Pattern r = Pattern.compile(pattern);
+            Matcher matcher = r.matcher(lyric);
+            while (matcher.find()) {
+                composer = matcher.group().split(":")[1].trim();
+            }
 
-	/**
-	 * 获取某个用户总共听过多少歌
-	 * @param uid
-	 * @return
-	 * @throws Exception
-	 */
-	public int getRecordSongNum(String uid) throws Exception {
+            String lyricist = "";
+            pattern = "作词 : .*?\n";
+            r = Pattern.compile(pattern);
+            matcher = r.matcher(lyric);
+            while (matcher.find()) {
+                lyricist = matcher.group().split(":")[1].trim();
+            }
 
-		String html = HttpHelper.get(Music163ApiCons.Music163UserHost + uid);
-		Document document = Jsoup.parse(html);
-		String songNums =
-				document.select("#rHeader > h4").get(0).html();
-		return Integer.parseInt(songNums.substring(4,songNums.length()-1));
-	}
+            Music163Song song = SongFactory.buildMusic163Song(songId, lyric, arts, albumTitle, albumId, title, composer, lyricist);
+            System.out.println(song);
+            songRepository.save(song);
+        } catch (Exception e) {
+            Music163Song song = SongFactory.buildMusic163Song(songId, "", arts, albumTitle, albumId, title, "", "");
+            System.out.println(song);
+            songRepository.save(song);
+        }
 
-	public static void main(String[] args) throws Exception {
+    }
 
-		Crawler163music crawler163music = new Crawler163music();
-		crawler163music.getSongInfo("28854182");
-		System.out.println(crawler163music.getLyric("28854182"));
-	}
+    public String getLyric(String songId) throws Exception {
+        String params = Music163ApiCons.getLyricParams(songId);
+        System.out.println(params);
+        String lyricUrl = Music163ApiCons.lyricUrl;
+        Document document = EncryptTools.commentAPI(params, lyricUrl);
+        return document.text();
+    }
 
+    /**
+     * 获取某个用户总共听过多少歌
+     *
+     * @param uid
+     * @return
+     * @throws Exception
+     */
+    public int getRecordSongNum(String uid) throws Exception {
+
+        String html = HttpHelper.get(Music163ApiCons.Music163UserHost + uid);
+        Document document = Jsoup.parse(html);
+        String songNums =
+                document.select("#rHeader > h4").get(0).html();
+        return Integer.parseInt(songNums.substring(4, songNums.length() - 1));
+    }
 
 }
