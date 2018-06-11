@@ -18,6 +18,11 @@ public class Music163Song extends BaseModel {
     private String composer;
     private String lyricist;
     private String lyric;
+
+    public String toString() {
+        return "arts: " + arts + " title: " + title;
+    }
+
     public String getTitle() {
         return title;
     }

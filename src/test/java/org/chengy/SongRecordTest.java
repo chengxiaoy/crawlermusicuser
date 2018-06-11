@@ -8,6 +8,7 @@ import org.chengy.repository.local.UserRepository;
 import org.chengy.repository.remote.Music163SongRepository;
 import org.chengy.repository.remote.Music163UserRepository;
 import org.chengy.service.analyzer.SongRecordAnalyzer;
+import org.chengy.service.crawler.music163.Vertx163Muisc;
 import org.chengy.service.discovery.Music163Discovery;
 import org.hibernate.validator.constraints.EAN;
 import org.junit.Test;
@@ -41,6 +42,24 @@ public class SongRecordTest {
     SongRepository localSongRepository;
     @Autowired
     Music163SongRepository songRepository;
+    @Autowired
+    Vertx163Muisc vertx163Muisc;
+
+    @Test
+    public void vertxTest() throws InterruptedException {
+
+        vertx163Muisc.getCrawlerInfo("330313", true, false);
+       // vertx163Muisc.getLoveSongs("330313");
+
+        Thread.sleep(1000 * 60);
+    }
+
+
+    @Test
+    public void dataTransfer() {
+        transferSong();
+        transferUser();
+    }
 
     @Test
     public void transferUser() {
@@ -50,7 +69,7 @@ public class SongRecordTest {
 
         List<Music163User> music163Users = localUserRepository.findAll(new PageRequest(pageId++, pageSize)).getContent();
         while (music163Users.size() > 0) {
-            userRepository.save(music163Users);
+            userRepository.saveAll(music163Users);
             music163Users = localUserRepository.findAll(new PageRequest(pageId++, pageSize)).getContent();
         }
 
@@ -65,7 +84,7 @@ public class SongRecordTest {
 
         List<Music163Song> music163Songs = localSongRepository.findAll(new PageRequest(pageId++, pageSize)).getContent();
         while (music163Songs.size() > 0) {
-            songRepository.save(music163Songs);
+            songRepository.saveAll(music163Songs);
             music163Songs = localSongRepository.findAll(new PageRequest(pageId++, pageSize)).getContent();
         }
 

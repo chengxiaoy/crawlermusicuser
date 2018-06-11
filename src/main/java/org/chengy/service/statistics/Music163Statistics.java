@@ -160,11 +160,11 @@ public class Music163Statistics {
 
         long alldata =
                 userRepository.countAllBySongRecordIsTrue();
-        Music163User user = userRepository.findOne(uid);
+        Music163User user = userRepository.findById(uid).orElse(null);
 
         List<String> songids = new ArrayList<>(user.getLoveSongId());
         Map<String, Integer> recordInfo = user.getSongScore().stream().collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
-        List<Music163SongRecord> songRecordList = Lists.newArrayList(songRecordRepository.findAll(songids));
+        List<Music163SongRecord> songRecordList = Lists.newArrayList(songRecordRepository.findAllById(songids));
         Map<String, Music163SongRecord> songRecordMap = songRecordList.stream().collect(Collectors.toMap(BaseModel::getId, ob -> ob));
         Map<String, Double> IDFmap = songRecordList.stream().collect(Collectors.toMap(ob1 -> ob1.getId(), ob2 -> recordInfo.get(ob2.getId())
                 * calculateIDF(alldata, (long) songRecordMap.get(ob2.getId()).getLoveNum())));

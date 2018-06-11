@@ -1,11 +1,15 @@
 package org.chengy.service.crawler;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.chengy.configuration.CrawlerBizConfig;
 import org.chengy.configuration.HttpConfig;
+import org.chengy.infrastructure.music163secret.Music163Filter;
 import org.chengy.newmodel.Music163User;
 import org.chengy.repository.remote.Music163SongRepository;
 import org.chengy.repository.remote.Music163UserRepository;
-import org.chengy.service.crawler.music163.Crawler163music;
+import org.chengy.service.crawler.music163.CrawlerUserInfo;
+import org.chengy.service.crawler.music163.HC163music;
+import org.chengy.service.crawler.music163.M163Crawler;
 import org.chengy.service.crawler.music163.Vertx163Muisc;
 import org.chengy.service.statistics.Music163Statistics;
 import org.slf4j.Logger;
@@ -21,6 +25,8 @@ import org.springframework.util.CollectionUtils;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /**
@@ -35,118 +41,72 @@ public class CrawlerLauncher {
     Music163UserRepository userRepository;
     @Autowired
     Music163SongRepository songRepository;
-    @Autowired
-    Crawler163music crawler163music;
+
     @Autowired
     Music163Statistics music163Statistics;
+
     @Autowired
-    Vertx163Muisc vertx163Muisc;
+    @Qualifier("vertx163Muisc")
+    M163Crawler m163Crawler;
+
     @Autowired
     @Qualifier("songExecutor")
     ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
-    public void saveMusic163SongByUser() {
-        int pageIndex = 0;
+
+    @Autowired
+    @Qualifier("userExecutor")
+    ThreadPoolTaskExecutor userExecutor;
+
+    ExecutorService executorService = Executors.newFixedThreadPool(5);
+
+
+    @Autowired
+    CrawlerBizConfig crawlerBizConfig;
+
+    @Autowired
+    Music163Filter filter;
+
+
+    public void crawlM163User() throws InterruptedException {
+
         while (true) {
-            int pageSize = 100;
-            Pageable pageable = new PageRequest(pageIndex, pageSize);
-            List<Music163User> userList = userRepository.findAll(pageable).getContent();
-
-            for (Music163User user : userList) {
-                Runnable runnable = new Runnable() {
-                    @Override
-                    public void run() {
-                        List<String> songIdlist = user.getLoveSongId();
-                        if (songIdlist != null && !CollectionUtils.isEmpty(songIdlist)) {
-                            for (String songId : songIdlist) {
-                                try {
-                                    vertx163Muisc.getSongInfo(songId);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        }
-                    }
-                };
-                threadPoolTaskExecutor.execute(runnable);
-            }
-            pageIndex++;
-            LOGGER.info("page is at :" + pageIndex);
-        }
-
-    }
-
-    public void crawlMusic163User() throws InterruptedException {
-        boolean flag = true;
-        while (flag) {
-            long userCount = userRepository.count();
-            HttpConfig.getHttpProxy();
-            int threadNums = Integer.valueOf(CrawlerBizConfig.getCrawlerUserThreadNum());
-
-            if (userCount >= threadNums) {
-                int pageId = (int) userCount / threadNums;
-                Pageable pageable = new PageRequest(pageId - 1, threadNums);
-                List<String> listStr = userRepository.findAll(pageable).getContent().stream().map(ob -> ob.getId()).collect(Collectors.toList());
-                System.out.println(listStr);
-                Iterator strItr = listStr.iterator();
-                for (int i = 0; i < threadNums; i++) {
-                    Thread thread = new Thread(new Runnable() {
+            String uid = crawlerBizConfig.getCrawlerUid();
+            try {
+                boolean userExit = filter.containsUid(Integer.valueOf(uid));
+                if (userExit && !crawlerBizConfig.needAdd()) {
+                    continue;
+                }
+                if (filter.putUid(Integer.parseInt(uid))) {
+                    Runnable crawlerUserInfoTask = new Runnable() {
                         @Override
                         public void run() {
-                            String communityId = (String) strItr.next();
-                            Music163User user = userRepository.findOne(communityId);
-                            userRepository.delete(user);
-                            crawler163music.getUserInfo(Arrays.asList(communityId));
+                            boolean flag = crawlerBizConfig.needAdd();
+
+                            CrawlerUserInfo crawlerInfo = m163Crawler.getCrawlerInfo(uid, flag, userExit);
+
+                            LOGGER.info("craw " + uid + " succeed!");
+
+                            List<String> relativeIds = crawlerInfo.getRelativeIds();
+                            if (!org.apache.commons.collections.CollectionUtils.isEmpty(relativeIds)) {
+                                crawlerBizConfig.setCrawlUids(relativeIds);
+                            }
+                            if (crawlerInfo.getUser() != null && !userExit) {
+                                Music163User user = crawlerInfo.getUser();
+                                List<Pair<String, Integer>> songInfo = crawlerInfo.getLoveSongs();
+                                List<String> songIds = songInfo.stream()
+                                        .map(Pair::getLeft).collect(Collectors.toList());
+                                user.setLoveSongId(songIds);
+                                user.setSongScore(songInfo);
+                                userRepository.save(user);
+                            }
                         }
-                    });
-                    thread.start();
+                    };
+                    userExecutor.execute(crawlerUserInfoTask);
                 }
-                flag = false;
-            }
-
-            //第一次启动的时候的时候
-            if (userCount < threadNums) {
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        crawler163music.getUserInfo(CrawlerBizConfig.getCrawlerUserSeeds());
-
-                    }
-                }).start();
-            }
-            Thread.sleep(1000 * 60 * 5);
-
-        }
-
-
-    }
-
-    /**
-     * 取用户十条最爱的歌曲信息不够 扩大为100条
-     */
-    public void fixMuser163User() {
-        while (true) {
-            int pageSize = 100;
-            Pageable pageable = new PageRequest(0, pageSize);
-            List<Music163User> userList = userRepository.findAll(pageable).getContent();
-
-            for (Music163User user : userList) {
-                Runnable runnable = new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            String uid = user.getId();
-                            List<String> songids = null;
-                            songids = crawler163music.getUserLikeSong(uid);
-                            user.setLoveSongId(songids);
-                            userRepository.save(user);
-                        } catch (Exception e) {
-                            System.out.println("failed get song for user:" + user);
-                        }
-
-                    }
-                };
-                threadPoolTaskExecutor.execute(runnable);
+            } catch (Exception e) {
+                System.out.println(uid + " get info failed");
+                e.printStackTrace();
             }
         }
     }

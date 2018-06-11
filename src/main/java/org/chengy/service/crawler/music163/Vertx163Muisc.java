@@ -40,7 +40,7 @@ import static org.chengy.infrastructure.music163secret.Music163ApiCons.Music163U
 
 @SuppressWarnings("Duplicates")
 @Component
-public class Vertx163Muisc {
+public class Vertx163Muisc implements M163Crawler{
 
 
     public static Logger LOGGER = LoggerFactory.getLogger(Vertx163Muisc.class);
@@ -51,8 +51,6 @@ public class Vertx163Muisc {
     @Autowired
     private Music163SongRepository songRepository;
 
-    @Autowired
-    Music163Filter filter;
 
     @Autowired
     VertxClientFactory vertxClientFactory;
@@ -62,67 +60,10 @@ public class Vertx163Muisc {
     });
 
 
-    @Autowired
-    @Qualifier("userExecutor")
-    ThreadPoolTaskExecutor threadPoolTaskExecutor;
-
     ExecutorService executorService = Executors.newFixedThreadPool(5);
 
 
-    public static void main(String[] args) {
-        Vertx163Muisc vertxTest = new Vertx163Muisc();
-        CrawlerInfo crawlerInfo = vertxTest.getCrawlerInfo("330313", true, false);
-        System.out.println(crawlerInfo);
-
-    }
-
-    public void crawlUser() throws InterruptedException {
-        List<String> seeds = CrawlerBizConfig.getCrawlerUserSeeds();
-        System.out.println("the seed for crawl user is:" + seeds);
-        BlockingQueue<String> uidQueue = new ArrayBlockingQueue<>(10000);
-        uidQueue.add("250038717");
-        uidQueue.add("625356566");
-        uidQueue.addAll(seeds);
-        while (true) {
-            String uid = uidQueue.take();
-            try {
-                boolean userExit = filter.containsUid(Integer.valueOf(uid));
-                if (userExit && uidQueue.size() > 100) {
-                    continue;
-                }
-                if (filter.putUid(Integer.parseInt(uid))) {
-                    Runnable crawlerUserInfoTask = new Runnable() {
-                        @Override
-                        public void run() {
-                            boolean flag = false;
-                            if (uidQueue.size() < 1000) {
-                                flag = true;
-                            }
-                            CrawlerInfo crawlerInfo = getCrawlerInfo(uid, flag, userExit);
-                            if (!CollectionUtils.isEmpty(crawlerInfo.getRelativeIds())) {
-                                uidQueue.addAll(crawlerInfo.getRelativeIds());
-                            }
-                            if (crawlerInfo.getUser() != null && !userExit) {
-                                Music163User user = crawlerInfo.getUser();
-                                List<Pair<String, Integer>> songInfo = crawlerInfo.getLoveSongs();
-                                List<String> songIds = songInfo.stream()
-                                        .map(Pair::getLeft).collect(Collectors.toList());
-                                user.setLoveSongId(songIds);
-                                user.setSongScore(songInfo);
-                                userRepository.save(user);
-                            }
-                        }
-                    };
-                    threadPoolTaskExecutor.execute(crawlerUserInfoTask);
-                }
-            } catch (Exception e) {
-                System.out.println(uid + " get info failed");
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private CrawlerInfo getCrawlerInfo(String uid, boolean relativeUser, boolean userExit) {
+    public CrawlerUserInfo getCrawlerInfo(String uid, boolean relativeUser, boolean userExit) {
 
         CompletableFuture<List<String>> relativeUserIds = CompletableFuture.completedFuture(new ArrayList<>());
         if (relativeUser) {
@@ -135,7 +76,7 @@ public class Vertx163Muisc {
             } catch (InterruptedException | ExecutionException e) {
                 LOGGER.error("get relative user error" + e.getMessage(), e);
             }
-            return new CrawlerInfo(null, uids);
+            return new CrawlerUserInfo(null, uids);
         }
 
         CompletableFuture<String> futureHomeHtml = getFutureHomeHtml(uid);
@@ -148,14 +89,14 @@ public class Vertx163Muisc {
         Music163User user = null;
         List<Pair<String, Integer>> songInfos = new ArrayList<>();
         try {
-            relaUserIds = relativeUserIds.get(3000, TimeUnit.MILLISECONDS);
+            relaUserIds = relativeUserIds.get(10*1000, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             relaUserIds = new ArrayList<>(0);
         }
         try {
-            user = userInfoCompletableFuture.get(3000, TimeUnit.MILLISECONDS);
+            user = userInfoCompletableFuture.get(10*1000, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
-            LOGGER.info("crawler user " + uid + "failed", e);
+            LOGGER.info("crawler user " + uid + "failed ", e);
             if (e.getCause() instanceof IllegalStateException) {
                 clientThreadLocal.set(vertxClientFactory.newWebClientWithProxy());
                 return getCrawlerInfo(uid, relativeUser, userExit);
@@ -164,14 +105,14 @@ public class Vertx163Muisc {
         try {
             songInfos = songInfoFuture.get(3000, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
-            LOGGER.info("get user " + uid + "love songs failed", e);
+            LOGGER.info("get user " + uid + "love songs failed ", e);
             if (e.getCause() instanceof IllegalStateException) {
                 clientThreadLocal.set(vertxClientFactory.newWebClientWithProxy());
                 return getCrawlerInfo(uid, relativeUser, userExit);
             }
         }
 
-        CrawlerInfo crawlerInfo = new CrawlerInfo(user, relaUserIds);
+        CrawlerUserInfo crawlerInfo = new CrawlerUserInfo(user, relaUserIds);
         crawlerInfo.setLoveSongs(songInfos);
         return crawlerInfo;
     }
@@ -336,7 +277,7 @@ public class Vertx163Muisc {
      * @param uid
      * @return
      */
-    private CompletableFuture<List<Pair<String, Integer>>> getLoveSongs(String uid) {
+    public CompletableFuture<List<Pair<String, Integer>>> getLoveSongs(String uid) {
         CompletableFuture<List<Pair<String, Integer>>> res = new CompletableFuture<>();
         try {
             String songRecordParam = Music163ApiCons.getSongRecordALLParams(uid, 1, 100);
@@ -432,11 +373,11 @@ public class Vertx163Muisc {
                 }
                 if (response.statusCode() == 200) {
                     String html = response.body().toString(StandardCharsets.UTF_8);
-                    if (html.contains("你要查找的网页找不到")) {
-                        futureHtml.completeExceptionally(new IllegalStateException("ip has been temporarily bloked"));
-                    } else {
+//                    if (html.contains("你要查找的网页找不到")) {
+//                        futureHtml.completeExceptionally(new IllegalStateException("ip has been temporarily bloked"));
+//                    } else {
                         futureHtml.complete(html);
-                    }
+//                    }
                 } else {
                     futureHtml.completeExceptionally(new IllegalStateException("http response is " + response.statusCode()));
                 }
@@ -451,47 +392,12 @@ public class Vertx163Muisc {
 
     }
 
-    class CrawlerInfo {
-        private Music163User user;
-        private List<String> relativeIds;
-        private List<Pair<String, Integer>> loveSongs;
 
-
-        public Music163User getUser() {
-            return user;
-        }
-
-        public void setUser(Music163User user) {
-            this.user = user;
-        }
-
-        public List<String> getRelativeIds() {
-            return relativeIds;
-        }
-
-        public void setRelativeIds(List<String> relativeIds) {
-            this.relativeIds = relativeIds;
-        }
-
-        public CrawlerInfo(Music163User user, List<String> relativeIds) {
-            this.user = user;
-            this.relativeIds = relativeIds;
-        }
-
-
-        public List<Pair<String, Integer>> getLoveSongs() {
-            return loveSongs;
-        }
-
-        public void setLoveSongs(List<Pair<String, Integer>> loveSongs) {
-            this.loveSongs = loveSongs;
-        }
-    }
 
 
     public void getSongInfo(String songId) throws Exception {
 
-        Music163Song exitSong = songRepository.findOne(songId);
+        Music163Song exitSong = songRepository.findById(songId).orElse(null);
         if (exitSong != null) {
             return;
         }

@@ -56,7 +56,7 @@ public class SongRecordAnalyzer {
                             e.printStackTrace();
                             System.out.println("save uid " + uid + " song record info failed");
                             Music163User user =
-                                    userRepository.findOne(uid);
+                                    userRepository.findById(uid).orElse(null);
                             user.setSongRecord(false);
                             userRepository.save(user);
                         }
@@ -82,7 +82,7 @@ public class SongRecordAnalyzer {
      */
     public void saveUserSongRecord(String userid) throws Exception {
 
-        Music163User user = userRepository.findOne(userid);
+        Music163User user = userRepository.findById(userid).orElse(null);
         if (user.getSongRecord() != null) {
             return;
         }
@@ -92,7 +92,7 @@ public class SongRecordAnalyzer {
 
         for (Pair<String, Integer> pair : recordInfo) {
             Music163SongRecord songRecord =
-                    songRecordRepository.findOne(pair.getKey());
+                    songRecordRepository.findById(pair.getKey()).orElse(null);
             if (songRecord == null) {
                 Music163SongRecord newSongRecord = SongRecordFactory.buildMusic163SongRecord(pair.getKey(), Music163ApiCons.communityName, 1, (long) pair.getValue(), userid);
                 songRecordRepository.save(newSongRecord);
@@ -104,7 +104,7 @@ public class SongRecordAnalyzer {
                     songRecordRepository.save(songRecord);
                 } catch (OptimisticLockingFailureException e) {
                     System.out.println("retry update songRecord");
-                    songRecord = songRecordRepository.findOne(songRecord.getId());
+                    songRecord = songRecordRepository.findById(songRecord.getId()).orElse(null);
                     songRecord.setScore(songRecord.getScore() + pair.getValue());
                     songRecord.setLoveNum(songRecord.getLoveNum() + 1);
                     songRecord.getLoverIds().add(userid);
@@ -126,7 +126,7 @@ public class SongRecordAnalyzer {
      */
     public Map<String, Double> getSongAverageScore(Collection<String> songIds) {
 
-        Iterator<Music163SongRecord> songRecordIterator = songRecordRepository.findAll(songIds).iterator();
+        Iterator<Music163SongRecord> songRecordIterator = songRecordRepository.findAllById(songIds).iterator();
         List<Music163SongRecord> songRecordList = Lists.newArrayList(songRecordIterator);
         Map<String, Double> map = songRecordList.stream().collect(Collectors.toMap(ob -> ob.getId(), ob -> {
             int loveNums = ob.getLoveNum();

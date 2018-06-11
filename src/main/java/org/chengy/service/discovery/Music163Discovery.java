@@ -12,7 +12,6 @@ import org.chengy.repository.remote.Music163SongRecordRepository;
 import org.chengy.repository.remote.Music163SongRepository;
 import org.chengy.repository.remote.Music163UserRepository;
 import org.chengy.service.analyzer.SongRecordAnalyzer;
-import org.chengy.service.crawler.music163.Crawler163music;
 import org.chengy.service.statistics.J2PythonUtil;
 import org.chengy.service.statistics.Music163Statistics;
 import org.slf4j.Logger;
@@ -38,8 +37,7 @@ public class Music163Discovery {
     Music163SongRepository songRepository;
     @Autowired
     Music163Statistics music163Statistics;
-    @Autowired
-    Crawler163music crawler163music;
+
 
     @Autowired
     Music163SongRecordRepository songRecordRepository;
@@ -75,7 +73,7 @@ public class Music163Discovery {
         J2PythonUtil.PythonRes pythonRes = J2PythonUtil.callPythonProcess(argvs);
         if (pythonRes.getCode() == 0) {
             recommendSongIds = filterSongs(pythonRes.getScoreMap().keySet(), uid);
-            return Lists.newArrayList(songRepository.findAll(recommendSongIds));
+            return Lists.newArrayList(songRepository.findAllById(recommendSongIds));
         } else {
             throw new RuntimeException("call python exception");
         }
@@ -89,7 +87,7 @@ public class Music163Discovery {
      * @return
      */
     private List<String> filterSongs(Set<String> songIdSet, String uid) {
-        Music163User user = userRepository.findOne(uid);
+        Music163User user = userRepository.findById(uid).orElse(null);
 
         songIdSet.removeAll(user.getLoveSongId());
         return new ArrayList<>(songIdSet);
@@ -144,7 +142,7 @@ public class Music163Discovery {
                     songScore.entrySet().stream().filter(ob -> !String.valueOf(ob.getValue()).equals("NaN")).sorted(Collections.reverseOrder(Comparator.comparingDouble(x -> (double) (x.getValue()))))
                             .limit(k).map(ob -> ob.getKey()).collect(Collectors.toSet());
             List<String> songIds = filterSongs(topSongIds, uid);
-            return Lists.newArrayList(songRepository.findAll(songIds));
+            return Lists.newArrayList(songRepository.findAllById(songIds));
         }
         return null;
     }
@@ -190,7 +188,7 @@ public class Music163Discovery {
      * @return
      */
     public List<Music163Song> getSimilarSongs(String songId, int k, boolean useAverageScore) throws JsonProcessingException {
-        Music163SongRecord songRecord = songRecordRepository.findOne(songId);
+        Music163SongRecord songRecord = songRecordRepository.findById(songId).orElse(null);
         if (songRecord == null) {
             LOGGER.warn("have no songRecord of " + songId);
             throw new NullPointerException("have no songRecord of" + songId);
@@ -222,9 +220,9 @@ public class Music163Discovery {
         }
         String filePath = pythonFile;
         String[] argvs = new String[]{"python", filePath, argv1, argv2, argv3, argv4};
-        J2PythonUtil.PythonRes pythonRes = J2PythonUtil.callPythonProcess(argvs);
+        J2PythonUtil.PythonRes pythonRes = J2PythonUtil.callPythonRPC(argvs);
         if (pythonRes.getCode() == 0) {
-            List<Music163Song> songList = Lists.newArrayList(songRepository.findAll(pythonRes.getScoreMap().keySet()));
+            List<Music163Song> songList = Lists.newArrayList(songRepository.findAllById(pythonRes.getScoreMap().keySet()));
             if (!useAverageScore) {
                 return songList;
             }

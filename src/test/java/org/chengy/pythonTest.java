@@ -65,7 +65,7 @@ public class pythonTest {
     @Test
     public void newRecommend() throws Exception {
         Map<String, Double> map = music163Statistics.getUserRelativeSong("252839335", 10);
-        List<Music163Song> songList = Lists.newArrayList(songRepository.findAll(map.keySet()));
+        List<Music163Song> songList = Lists.newArrayList(songRepository.findAllById(map.keySet()));
         System.out.println("======tf-idf score======");
         Map<String, Double> songInfo = songList.stream().collect(Collectors.toMap(ob -> ob.getTitle(), ob -> map.get(ob.getId())));
         System.out.println(songInfo);
@@ -77,7 +77,7 @@ public class pythonTest {
     @Test
     public void getUserRelativeSongTest() throws Exception {
         Map<String, Double> map = music163Statistics.getUserRelativeSong("330313", 10);
-        List<Music163Song> songList = Lists.newArrayList(songRepository.findAll(map.keySet()));
+        List<Music163Song> songList = Lists.newArrayList(songRepository.findAllById(map.keySet()));
 
         Map<String, Double> scoreMap = songRecordAnalyzer.getSongAverageScore(map.keySet());
         System.out.println("======tf-idf score======");
@@ -90,10 +90,10 @@ public class pythonTest {
 
     @Test
     public void getSimilarSongsTest() throws JsonProcessingException {
-        String songId = "560714133";
+        String songId = "28793140";
 
         System.out.println(music163Discovery.getSimilarSongs(songId, 20, false));
-        System.out.println(music163Discovery.getSimilarSongs(songId, 20, true));
+//        System.out.println(music163Discovery.getSimilarSongs(songId, 20, true));
     }
 
 

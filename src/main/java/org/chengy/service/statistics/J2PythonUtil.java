@@ -1,18 +1,44 @@
 package org.chengy.service.statistics;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.client.HttpClient;
+import org.chengy.core.HttpHelper;
+import org.chengy.infrastructure.music163secret.VertxClientFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URLEncoder;
 import java.util.Map;
 
 public class J2PythonUtil {
     static ObjectMapper objectMapper = new ObjectMapper();
 
+
+    public static PythonRes callPythonRPC(String[] args)  {
+        PythonRes pythonRes = new PythonRes();
+
+        try {
+            objectMapper.configure(JsonParser.Feature.ALLOW_NON_NUMERIC_NUMBERS, true);
+            String argsStr = objectMapper.writeValueAsString(args);
+            String url = "http://localhost:5000/recommend?args=";
+
+            String res = HttpHelper.get(url + URLEncoder.encode(argsStr, "utf-8"));
+            Map<String, Object> map = objectMapper.readValue(res, new TypeReference<Map<String, Object>>() {
+            });
+            pythonRes.scoreMap = map;
+            pythonRes.setCode(0);
+            return pythonRes;
+        } catch (Exception e) {
+            pythonRes.setCode(1);
+        }
+        return pythonRes;
+
+    }
 
     public static PythonRes callPythonProcess(String[] args) {
         objectMapper.configure(JsonParser.Feature.ALLOW_NON_NUMERIC_NUMBERS, true);
