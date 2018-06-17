@@ -1,7 +1,6 @@
 package org.chengy.configuration;
 
 import com.google.common.collect.Lists;
-import org.chengy.model.User;
 import org.chengy.util.RedisUtil;
 import org.springframework.beans.factory.annotation.Value;
 

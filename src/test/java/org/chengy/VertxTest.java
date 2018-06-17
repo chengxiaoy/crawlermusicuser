@@ -2,7 +2,6 @@ package org.chengy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -14,9 +13,9 @@ import io.vertx.ext.web.client.WebClientOptions;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.chengy.infrastructure.music163secret.EncryptTools;
-import org.chengy.infrastructure.music163secret.Music163ApiCons;
-import org.chengy.infrastructure.music163secret.UserFactory;
+import org.chengy.infrastructure.music163.EncryptTools;
+import org.chengy.infrastructure.music163.Music163ApiCons;
+import org.chengy.infrastructure.music163.UserFactory;
 import org.chengy.model.User;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -29,7 +28,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static org.chengy.infrastructure.music163secret.Music163ApiCons.Music163UserHost;
+import static org.chengy.infrastructure.music163.Music163ApiCons.Music163UserHost;
 
 @SuppressWarnings("Duplicates")
 public class VertxTest {

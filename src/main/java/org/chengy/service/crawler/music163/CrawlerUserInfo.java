@@ -1,7 +1,7 @@
 package org.chengy.service.crawler.music163;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.chengy.newmodel.Music163User;
+import org.chengy.model.Music163User;
 
 import java.util.List;
 
@@ -27,6 +27,7 @@ public class CrawlerUserInfo {
     public void setRelativeIds(List<String> relativeIds) {
         this.relativeIds = relativeIds;
     }
+
 
     public CrawlerUserInfo(Music163User user, List<String> relativeIds) {
         this.user = user;

@@ -1,4 +1,4 @@
-package org.chengy.util;
+package org.chengy.configuration.mongo;
 
 import com.mongodb.MongoClient;
 import org.springframework.data.mongodb.MongoDbFactory;

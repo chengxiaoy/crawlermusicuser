@@ -1,7 +1,7 @@
 package org.chengy.repository.remote;
 
 import org.chengy.model.Song;
-import org.chengy.newmodel.Music163Song;
+import org.chengy.model.Music163Song;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;

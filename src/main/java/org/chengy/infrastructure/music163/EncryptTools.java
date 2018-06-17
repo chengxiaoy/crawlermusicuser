@@ -1,8 +1,5 @@
-package org.chengy.infrastructure.music163secret;
+package org.chengy.infrastructure.music163;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -11,13 +8,10 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
-import org.chengy.core.HTTPConnectionManager;
-import org.chengy.core.HttpHelper;
+import org.chengy.net.hc.HttpHelper;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
@@ -25,7 +19,6 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigInteger;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;

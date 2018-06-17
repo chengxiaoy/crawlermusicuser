@@ -2,10 +2,10 @@ package org.chengy.service.analyzer;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.tuple.Pair;
-import org.chengy.infrastructure.music163secret.Music163ApiCons;
-import org.chengy.infrastructure.music163secret.SongRecordFactory;
-import org.chengy.newmodel.Music163SongRecord;
-import org.chengy.newmodel.Music163User;
+import org.chengy.infrastructure.music163.Music163ApiCons;
+import org.chengy.infrastructure.music163.SongRecordFactory;
+import org.chengy.model.Music163SongRecord;
+import org.chengy.model.Music163User;
 import org.chengy.repository.remote.Music163SongRecordRepository;
 import org.chengy.repository.remote.Music163UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,6 +1,6 @@
 package org.chengy;
 
-import org.chengy.core.HttpHelper;
+import org.chengy.net.hc.HttpHelper;
 import org.chengy.service.crawler.music163.Vertx163Muisc;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -11,9 +11,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import java.util.Collections;
-import java.util.Set;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)

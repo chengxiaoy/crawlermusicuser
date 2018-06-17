@@ -1,13 +1,9 @@
-package org.chengy.service.statistics;
+package org.chengy.util;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.client.HttpClient;
-import org.chengy.core.HttpHelper;
-import org.chengy.infrastructure.music163secret.VertxClientFactory;
-import org.springframework.stereotype.Component;
+import org.chengy.net.hc.HttpHelper;
 
 import java.io.BufferedReader;
 import java.io.IOException;

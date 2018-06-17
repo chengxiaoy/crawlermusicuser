@@ -1,24 +1,19 @@
-package org.chengy.infrastructure.music163secret;
+package org.chengy.infrastructure.music163;
 
-import com.fasterxml.jackson.core.SerializableString;
-import com.google.common.base.Stopwatch;
-import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.impl.ConcurrentHashSet;
-import io.vertx.core.net.ProxyOptions;
 import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
-import io.vertx.ext.web.client.WebClientOptions;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.chengy.net.vertx.VertxClientFactory;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.StreamingHttpOutputMessage;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;

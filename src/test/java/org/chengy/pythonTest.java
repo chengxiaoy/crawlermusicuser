@@ -2,7 +2,7 @@ package org.chengy;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.Lists;
-import org.chengy.newmodel.Music163Song;
+import org.chengy.model.Music163Song;
 import org.chengy.repository.remote.Music163SongRepository;
 import org.chengy.repository.remote.Music163UserRepository;
 import org.chengy.service.analyzer.SongRecordAnalyzer;

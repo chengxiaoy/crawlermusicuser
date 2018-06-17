@@ -1,8 +1,8 @@
 package org.chengy;
 
 
-import org.chengy.newmodel.Music163Song;
-import org.chengy.newmodel.Music163User;
+import org.chengy.model.Music163Song;
+import org.chengy.model.Music163User;
 import org.chengy.repository.local.SongRepository;
 import org.chengy.repository.local.UserRepository;
 import org.chengy.repository.remote.Music163SongRepository;
@@ -10,7 +10,6 @@ import org.chengy.repository.remote.Music163UserRepository;
 import org.chengy.service.analyzer.SongRecordAnalyzer;
 import org.chengy.service.crawler.music163.Vertx163Muisc;
 import org.chengy.service.discovery.Music163Discovery;
-import org.hibernate.validator.constraints.EAN;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;

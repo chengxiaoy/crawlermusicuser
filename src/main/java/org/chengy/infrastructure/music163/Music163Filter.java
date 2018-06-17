@@ -1,11 +1,7 @@
-package org.chengy.infrastructure.music163secret;
+package org.chengy.infrastructure.music163;
 
 
-import io.vertx.core.impl.ConcurrentHashSet;
-import org.chengy.model.User;
-import org.chengy.repository.remote.Music163UserRepository;
 import org.chengy.util.RedisUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import org.springframework.stereotype.Component;
