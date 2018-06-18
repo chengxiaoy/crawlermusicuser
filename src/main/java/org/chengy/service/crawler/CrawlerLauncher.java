@@ -67,43 +67,41 @@ public class CrawlerLauncher {
         while (true) {
             String uid = crawlerBizConfig.getCrawlerUid();
             try {
-                boolean userExit = filter.containsUid(Integer.valueOf(uid));
+                boolean userExit = filter.containsUid(uid);
                 if (userExit && !crawlerBizConfig.needAdd()) {
                     continue;
                 }
-                if (filter.putUid(Integer.parseInt(uid))) {
-                    Runnable crawlerUserInfoTask = new Runnable() {
-                        @Override
-                        public void run() {
-                            boolean flag = crawlerBizConfig.needAdd();
 
-                            CompletableFuture<CrawlerUserInfo> crawlerInfoFuture = m163CrawlerAsync.getUserInfoAsync(uid, flag, userExit);
+                Runnable crawlerUserInfoTask = new Runnable() {
+                    @Override
+                    public void run() {
+                        boolean flag = crawlerBizConfig.needAdd();
+                        CompletableFuture<CrawlerUserInfo> crawlerInfoFuture = m163CrawlerAsync.getUserInfoAsync(uid, flag, userExit);
 
-                            LOGGER.info("craw " + uid + " succeed!");
+                        crawlerInfoFuture.whenComplete((crawlerInfo, throwable) -> {
+                            if (throwable != null) {
+                                LOGGER.warn("craw user {} failed", uid, throwable);
+                            }
+                            List<String> relativeIds = crawlerInfo.getRelativeIds();
+                            if (!org.apache.commons.collections.CollectionUtils.isEmpty(relativeIds)) {
+                                crawlerBizConfig.setCrawlUids(relativeIds);
+                            }
+                            if (crawlerInfo.getUser() != null && !userExit) {
+                                Music163User user = crawlerInfo.getUser();
+                                List<Pair<String, Integer>> songInfo = crawlerInfo.getLoveSongs();
+                                List<String> songIds = songInfo.stream()
+                                        .map(Pair::getLeft).collect(Collectors.toList());
+                                user.setLoveSongId(songIds);
+                                user.setSongScore(songInfo);
+                                userRepository.save(user);
+                                filter.putUid(uid);
+                                LOGGER.info("craw " + uid + " succeed!");
+                            }
+                        });
 
-                            crawlerInfoFuture.whenComplete((crawlerInfo, throwable) -> {
-                                if (throwable != null) {
-                                    LOGGER.warn("craw user {} failed", uid, throwable);
-                                }
-                                List<String> relativeIds = crawlerInfo.getRelativeIds();
-                                if (!org.apache.commons.collections.CollectionUtils.isEmpty(relativeIds)) {
-                                    crawlerBizConfig.setCrawlUids(relativeIds);
-                                }
-                                if (crawlerInfo.getUser() != null && !userExit) {
-                                    Music163User user = crawlerInfo.getUser();
-                                    List<Pair<String, Integer>> songInfo = crawlerInfo.getLoveSongs();
-                                    List<String> songIds = songInfo.stream()
-                                            .map(Pair::getLeft).collect(Collectors.toList());
-                                    user.setLoveSongId(songIds);
-                                    user.setSongScore(songInfo);
-                                    userRepository.save(user);
-                                }
-                            });
-
-                        }
-                    };
-                    userExecutor.execute(crawlerUserInfoTask);
-                }
+                    }
+                };
+                userExecutor.execute(crawlerUserInfoTask);
             } catch (Exception e) {
                 System.out.println(uid + " get info failed");
                 e.printStackTrace();

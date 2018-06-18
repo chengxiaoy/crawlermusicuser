@@ -2,8 +2,11 @@ package org.chengy.configuration;
 
 import com.google.common.collect.Lists;
 import org.chengy.util.RedisUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 
+import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.stereotype.Component;
 import redis.clients.jedis.Jedis;
 
@@ -16,6 +19,8 @@ import java.util.List;
  */
 @Component
 public class CrawlerBizConfig {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CrawlerBizConfig.class);
 
     private static String crawlerUserSeed;
 
@@ -31,47 +36,50 @@ public class CrawlerBizConfig {
 
     @PostConstruct
     public void init() {
-        Jedis jedis = jedisThreadLocal.get();
-
-        Long queueSize = jedis.llen(USER_QUEUE);
-        if (queueSize == null || queueSize == 0) {
-            List<String> seedList = getCrawlerUserSeeds();
-            String[] seeds = new String[seedList.size()];
-            seedList.toArray(seeds);
-            jedis.lpush(USER_QUEUE, seeds);
+        try (Jedis jedis = RedisUtil.getJedis()) {
+            Long queueSize = jedis.llen(USER_QUEUE);
+            if (queueSize == null || queueSize == 0) {
+                List<String> seedList = getCrawlerUserSeeds();
+                String[] seeds = new String[seedList.size()];
+                seedList.toArray(seeds);
+                jedis.lpush(USER_QUEUE, seeds);
+            }
+            LOGGER.info("init user queue success");
         }
-
-        System.out.println("init user queue success");
     }
 
 
     public String getCrawlerUid() {
-        Jedis jedis = jedisThreadLocal.get();
+        // Jedis jedis = jedisThreadLocal.get();
 
+        try (Jedis jedis = RedisUtil.getJedis()) {
 
-        while (jedis.llen(USER_QUEUE)<=0){
-            try {
-                Thread.sleep(10*1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            while (jedis.llen(USER_QUEUE) <= 0) {
+                try {
+                    Thread.sleep(10 * 1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
+            return jedis.rpop(USER_QUEUE);
         }
-        return jedis.rpop(USER_QUEUE);
     }
 
     public boolean needAdd() {
 
-        Jedis jedis = jedisThreadLocal.get();
-
-        return jedis.llen(USER_QUEUE) < 1000;
+        //   Jedis jedis = jedisThreadLocal.get();
+        try (Jedis jedis = RedisUtil.getJedis()) {
+            return jedis.llen(USER_QUEUE) < 1000;
+        }
     }
 
 
     public void setCrawlUids(List<String> uids) {
-        Jedis jedis = jedisThreadLocal.get();
+        // Jedis jedis = jedisThreadLocal.get();
 
-
-        jedis.lpush(USER_QUEUE, uids.toArray(new String[0]));
+        try (Jedis jedis = RedisUtil.getJedis()) {
+            jedis.lpush(USER_QUEUE, uids.toArray(new String[0]));
+        }
     }
 
     /**
@@ -80,10 +88,11 @@ public class CrawlerBizConfig {
      * @param uids
      */
     public void specifyCrawlerUser(List<String> uids) {
-        Jedis jedis = jedisThreadLocal.get();
+        //   Jedis jedis = jedisThreadLocal.get();
 
-
-        jedis.rpush(USER_QUEUE, uids.toArray(new String[0]));
+        try (Jedis jedis = RedisUtil.getJedis()) {
+            jedis.rpush(USER_QUEUE, uids.toArray(new String[0]));
+        }
     }
 
 
@@ -93,17 +102,18 @@ public class CrawlerBizConfig {
      * @return
      */
     public List<String> getCrawlerUserSeeds() {
-        Jedis jedis = jedisThreadLocal.get();
-
-
-        // seed 部分
-        Long userCount = jedis.scard(USER_KEY);
-        if (userCount == 0) {
-            m163userSeeds = Lists.newArrayList(crawlerUserSeed.split(","));
-        } else {
-            m163userSeeds = jedis.srandmember(USER_KEY, 20);
+        //   Jedis jedis = jedisThreadLocal.get();
+        try (Jedis jedis = RedisUtil.getJedis()) {
+            // seed 部分
+            Long userCount = jedis.scard(USER_KEY);
+            if (userCount == 0) {
+                m163userSeeds = Lists.newArrayList(crawlerUserSeed.split(","));
+            } else {
+                m163userSeeds = jedis.srandmember(USER_KEY, 20);
+            }
+            LOGGER.info("crawler user seed {}", m163userSeeds);
+            return m163userSeeds;
         }
-        return m163userSeeds;
     }
 
     @Value("${crawler.user.seed}")

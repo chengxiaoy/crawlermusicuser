@@ -29,6 +29,7 @@
     </appender>
 
     <root level="INFO">
+        <appender-ref ref="BIZ_FILE"/>
         <appender-ref ref="STDOUT" />
     </root>
     <logger name="org.chengy" level="INFO" additivity="false">

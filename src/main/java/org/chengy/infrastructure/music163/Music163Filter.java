@@ -39,28 +39,38 @@ public class Music163Filter {
     }
 
 
-    public boolean containsUid(Integer uid) {
-        Jedis jedis=jedisThreadLocal.get();
-        return jedis.sismember(USER_KEY, String.valueOf(uid));
+    public boolean containsUid(String uid) {
+
+        try (Jedis jedis = RedisUtil.getJedis()) {
+            return jedis.sismember(USER_KEY, uid);
+        }
+//        Jedis jedis = jedisThreadLocal.get();
+//        return jedis.sismember(USER_KEY, uid);
     }
 
-    public boolean putUid(Integer uid) {
-        Jedis jedis=jedisThreadLocal.get();
+    public boolean putUid(String uid) {
+        //   Jedis jedis = jedisThreadLocal.get();
 
-        jedis.sadd(USER_KEY, String.valueOf(uid));
+        try (Jedis jedis = RedisUtil.getJedis()) {
+            jedis.sadd(USER_KEY, uid);
+        }
         return true;
     }
 
     public boolean containsSongId(String songId) {
-        Jedis jedis=jedisThreadLocal.get();
+        //  Jedis jedis = jedisThreadLocal.get();
+        try (Jedis jedis = RedisUtil.getJedis()) {
+            return jedis.sismember(SONG_KEY, songId);
 
-        return jedis.sismember(SONG_KEY, songId);
+        }
     }
 
     public boolean putSongId(String songId) {
-        Jedis jedis=jedisThreadLocal.get();
+        //Jedis jedis = jedisThreadLocal.get();
+        try (Jedis jedis = RedisUtil.getJedis()) {
+            jedis.sadd(SONG_KEY, songId);
 
-        jedis.sadd(SONG_KEY, songId);
+        }
         return true;
     }
 }

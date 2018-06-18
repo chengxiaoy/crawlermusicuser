@@ -58,7 +58,7 @@ public class Vertx163Muisc implements M163CrawlerAsync {
     });
 
 
-    ExecutorService parseExecutorService = Executors.newFixedThreadPool(5);
+    ExecutorService parseExecutorService = Executors.newFixedThreadPool(3);
 
 
     @Override
@@ -99,7 +99,7 @@ public class Vertx163Muisc implements M163CrawlerAsync {
         try {
             String fansParam = Music163ApiCons.getFansParams(uid, 1, 100);
             CompletableFuture<String> fansFutureJsonStr = commonWebAPI(fansParam, Music163ApiCons.fansUrl);
-            String followedParam = Music163ApiCons.getFollowedParams(uid, 1, 100);
+            String followedParam = Music163ApiCons.getFollowedParams(uid, 1, 10);
             CompletableFuture<String> followedFutureJsonStr = commonWebAPI(followedParam, Music163ApiCons.getFollowedUrl(uid));
             ObjectMapper objectMapper = new ObjectMapper();
 
