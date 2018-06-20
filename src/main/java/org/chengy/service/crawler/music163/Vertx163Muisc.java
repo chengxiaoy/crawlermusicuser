@@ -8,7 +8,6 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.chengy.infrastructure.music163.*;
 import org.chengy.net.vertx.VertxClientFactory;
@@ -16,9 +15,6 @@ import org.chengy.model.Music163Song;
 import org.chengy.model.Music163User;
 import org.chengy.repository.remote.Music163SongRepository;
 import org.chengy.repository.remote.Music163UserRepository;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,8 +25,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.chengy.infrastructure.music163.Music163ApiCons.Music163UserHost;
@@ -58,7 +52,7 @@ public class Vertx163Muisc implements M163CrawlerAsync {
     });
 
 
-    ExecutorService parseExecutorService = Executors.newFixedThreadPool(3);
+    ExecutorService parseExecutorService = Executors.newFixedThreadPool(5);
 
 
     @Override
@@ -99,8 +93,8 @@ public class Vertx163Muisc implements M163CrawlerAsync {
         try {
             String fansParam = Music163ApiCons.getFansParams(uid, 1, 100);
             CompletableFuture<String> fansFutureJsonStr = commonWebAPI(fansParam, Music163ApiCons.fansUrl);
-            String followedParam = Music163ApiCons.getFollowedParams(uid, 1, 10);
-            CompletableFuture<String> followedFutureJsonStr = commonWebAPI(followedParam, Music163ApiCons.getFollowedUrl(uid));
+//            String followedParam = Music163ApiCons.getFollowedParams(uid, 1, 10);
+//            CompletableFuture<String> followedFutureJsonStr = commonWebAPI(followedParam, Music163ApiCons.getFollowedUrl(uid));
             ObjectMapper objectMapper = new ObjectMapper();
 
             AtomicInteger steps = new AtomicInteger(0);
@@ -120,7 +114,7 @@ public class Vertx163Muisc implements M163CrawlerAsync {
                             } catch (IOException e) {
                                 e.printStackTrace();
                             } finally {
-                                if (steps.getAndIncrement() == 1) {
+                                if (steps.getAndIncrement() == 0) {
                                     completableFuture.complete(relativeIds);
                                 }
                             }
@@ -129,27 +123,27 @@ public class Vertx163Muisc implements M163CrawlerAsync {
                     }
             );
 
-            followedFutureJsonStr.whenCompleteAsync((jsonStr, t) -> {
-                        if (t != null) {
-                            completableFuture.completeExceptionally(t.getCause());
-                        } else {
-                            try {
-                                JsonNode root = objectMapper.readTree(jsonStr);
-                                List<JsonNode> jsonNodeList =
-                                        root.findValue("follow").findValues("userId");
-                                List<String> ids =
-                                        jsonNodeList.stream().map(JsonNode::asText).collect(Collectors.toList());
-                                relativeIds.addAll(ids);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            } finally {
-                                if (steps.getAndIncrement() == 1) {
-                                    completableFuture.complete(relativeIds);
-                                }
-                            }
-                        }
-                    }
-            );
+//            followedFutureJsonStr.whenCompleteAsync((jsonStr, t) -> {
+//                        if (t != null) {
+//                            completableFuture.completeExceptionally(t.getCause());
+//                        } else {
+//                            try {
+//                                JsonNode root = objectMapper.readTree(jsonStr);
+//                                List<JsonNode> jsonNodeList =
+//                                        root.findValue("follow").findValues("userId");
+//                                List<String> ids =
+//                                        jsonNodeList.stream().map(JsonNode::asText).collect(Collectors.toList());
+//                                relativeIds.addAll(ids);
+//                            } catch (IOException e) {
+//                                e.printStackTrace();
+//                            } finally {
+//                                if (steps.getAndIncrement() == 1) {
+//                                    completableFuture.complete(relativeIds);
+//                                }
+//                            }
+//                        }
+//                    }
+//            );
             return completableFuture;
         } catch (Exception e) {
             e.printStackTrace();

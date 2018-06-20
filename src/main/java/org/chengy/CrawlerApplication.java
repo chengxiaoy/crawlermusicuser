@@ -20,7 +20,7 @@ public class CrawlerApplication implements CommandLineRunner {
 	}
 
 	public void run(String... var1) throws Exception {
-		launcher.crawlM163User();
+	//	launcher.crawlM163User();
 	}
 
 }

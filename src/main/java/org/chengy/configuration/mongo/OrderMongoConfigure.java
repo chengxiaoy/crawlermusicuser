@@ -7,9 +7,9 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
-//@Configuration
-//@EnableMongoRepositories(basePackages = {"org.chengy.repository.remote"}, mongoTemplateRef = "orderMongoTemplate")
-//@ConfigurationProperties(prefix = "order.mongodb")
+@Configuration
+@EnableMongoRepositories(basePackages = {"org.chengy.repository.remote"}, mongoTemplateRef = "orderMongoTemplate")
+@ConfigurationProperties(prefix = "order.mongodb")
 public class OrderMongoConfigure extends AbstractMongoConfigure{
     @Primary
     @Override

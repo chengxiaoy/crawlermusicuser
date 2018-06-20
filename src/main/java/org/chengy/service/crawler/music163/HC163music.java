@@ -2,29 +2,21 @@ package org.chengy.service.crawler.music163;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.chengy.net.hc.HttpHelper;
 import org.chengy.infrastructure.music163.EncryptTools;
 import org.chengy.infrastructure.music163.Music163ApiCons;
-import org.chengy.infrastructure.music163.SongFactory;
-import org.chengy.infrastructure.music163.UserFactory;
 import org.chengy.model.Music163Song;
 import org.chengy.model.Music163User;
 import org.chengy.repository.remote.Music163SongRepository;
 import org.chengy.repository.remote.Music163UserRepository;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**

@@ -90,7 +90,7 @@ public class pythonTest {
 
     @Test
     public void getSimilarSongsTest() throws JsonProcessingException {
-        String songId = "28793140";
+        String songId = "554530716";
 
         System.out.println(music163Discovery.getSimilarSongs(songId, 20, false));
 //        System.out.println(music163Discovery.getSimilarSongs(songId, 20, true));

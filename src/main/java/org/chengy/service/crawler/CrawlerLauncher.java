@@ -7,7 +7,6 @@ import org.chengy.model.Music163User;
 import org.chengy.repository.remote.Music163SongRepository;
 import org.chengy.repository.remote.Music163UserRepository;
 import org.chengy.service.crawler.music163.CrawlerUserInfo;
-import org.chengy.service.crawler.music163.M163Crawler;
 import org.chengy.service.crawler.music163.M163CrawlerAsync;
 import org.chengy.service.statistics.Music163Statistics;
 import org.slf4j.Logger;
@@ -19,8 +18,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /**
@@ -52,7 +49,6 @@ public class CrawlerLauncher {
     @Qualifier("userExecutor")
     ThreadPoolTaskExecutor userExecutor;
 
-    ExecutorService executorService = Executors.newFixedThreadPool(5);
 
 
     @Autowired
