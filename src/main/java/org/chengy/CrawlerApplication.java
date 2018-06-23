@@ -9,11 +9,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class CrawlerApplication implements CommandLineRunner {
 
-
 	@Autowired
 	CrawlerLauncher launcher;
-
-
 
 	public static void main(String[] args) {
 		SpringApplication.run(CrawlerApplication.class, args);
@@ -21,6 +18,8 @@ public class CrawlerApplication implements CommandLineRunner {
 
 	public void run(String... var1) throws Exception {
 	//	launcher.crawlM163User();
+
+		launcher.crawlM163Songs();
 	}
 
 }

@@ -7,6 +7,6 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 
-public interface Music163SongRepository extends MongoRepository<Music163Song, String> {
+public interface LocalMusic163SongRepository extends MongoRepository<Music163Song, String> {
      List<Music163Song> findMusic163SongsByLyricist(String lyricist);
 }

@@ -5,7 +5,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Component;
 
 @Component("localUserRepository")
-public interface Music163UserRepository extends MongoRepository<Music163User, String> {
+public interface LocalMusic163UserRepository extends MongoRepository<Music163User, String> {
 
     long countAllBySongRecordIsTrue();
 }

@@ -28,73 +28,66 @@ import java.util.List;
 @ActiveProfiles("test")
 public class SongRecordTest {
 
-    @Value("${profile}")
-    String env;
-    @Autowired
-    Music163Discovery music163Discovery;
+	@Value("${profile}")
+	String env;
+	@Autowired
+	Music163Discovery music163Discovery;
 
-    @Autowired
-    Music163UserRepository userRepository;
+	@Autowired
+	Music163UserRepository userRepository;
 
-    @Autowired
-    org.chengy.repository.local.Music163UserRepository localUserRepository;
+	@Autowired
+	org.chengy.repository.local.LocalMusic163UserRepository localUserRepository;
 
-    @Autowired
-    org.chengy.repository.local.Music163SongRepository localSongRepository;
-    @Autowired
-    SongRecordAnalyzer songRecordAnalyzer;
+	@Autowired
+	org.chengy.repository.local.LocalMusic163SongRepository localSongRepository;
+	@Autowired
+	SongRecordAnalyzer songRecordAnalyzer;
 
-    @Autowired
-    Music163SongRepository songRepository;
-    @Autowired
-    Vertx163Muisc vertx163Muisc;
-
-
-
-    @Test
-    public void testException(){
-
-        try {
-            FileReader file=new FileReader("123");
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
+	@Autowired
+	Music163SongRepository songRepository;
+	@Autowired
+	Vertx163Muisc vertx163Muisc;
 
 
-    }
+	@Test
+	public void transferData() {
 
-    public void transferUser() {
-        int pageId = 0;
-        int pageSize = 1000;
-        List<Music163User> music163Users = localUserRepository.findAll(PageRequest.of(pageId++, pageSize)).getContent();
-        while (music163Users.size() > 0) {
-            for (Music163User user : music163Users) {
-                if (!userRepository.existsById(user.getId())) {
-                    userRepository.save(user);
-                }
-            }
-            music163Users = localUserRepository.findAll(PageRequest.of(pageId++, pageSize)).getContent();
-        }
-    }
+		transferSong();
+	}
 
-    public void transferSong() {
-        int pageId = 0;
-        int pageSize = 1000;
-        List<Music163Song> music163Songs = localSongRepository.findAll(PageRequest.of(pageId++, pageSize)).getContent();
-        while (music163Songs.size() > 0) {
-            for (Music163Song song : music163Songs) {
-                if (songRepository.existsById(song.getId())) {
-                    songRepository.save(song);
-                }
-            }
-            music163Songs = localSongRepository.findAll(PageRequest.of(pageId++, pageSize)).getContent();
-        }
-    }
+	public void transferUser() {
+		int pageId = 0;
+		int pageSize = 1000;
+		List<Music163User> music163Users = localUserRepository.findAll(PageRequest.of(pageId++, pageSize)).getContent();
+		while (music163Users.size() > 0) {
+			for (Music163User user : music163Users) {
+				if (!userRepository.existsById(user.getId())) {
+					userRepository.save(user);
+				}
+			}
+			music163Users = localUserRepository.findAll(PageRequest.of(pageId++, pageSize)).getContent();
+		}
+	}
+
+	public void transferSong() {
+		int pageId = 0;
+		int pageSize = 1000;
+		List<Music163Song> music163Songs = localSongRepository.findAll(PageRequest.of(pageId++, pageSize)).getContent();
+		while (music163Songs.size() > 0) {
+			for (Music163Song song : music163Songs) {
+				if (songRepository.existsById(song.getId())) {
+					songRepository.save(song);
+				}
+			}
+			music163Songs = localSongRepository.findAll(PageRequest.of(pageId++, pageSize)).getContent();
+		}
+	}
 
 
-    @Test
-    public void getSongRecord() {
-        songRecordAnalyzer.getSongRecordInfo();
-    }
+	@Test
+	public void getSongRecord() {
+		songRecordAnalyzer.getSongRecordInfo();
+	}
 
 }

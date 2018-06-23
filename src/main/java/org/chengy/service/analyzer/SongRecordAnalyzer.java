@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.lang3.tuple.Pair;
 import org.chengy.infrastructure.music163.Music163ApiCons;
 import org.chengy.infrastructure.music163.SongRecordFactory;
+import org.chengy.model.BaseModel;
 import org.chengy.model.Music163SongRecord;
 import org.chengy.model.Music163User;
 import org.chengy.repository.remote.Music163SongRecordRepository;
@@ -41,10 +42,10 @@ public class SongRecordAnalyzer {
         int pageSize = 100;
         Pageable pageable = new PageRequest(pageIndex, pageSize);
         List<Music163User> userList = userRepository.findAll(pageable).getContent();
+        userList = userList.stream().filter(ob -> ob.getLoveSongId().size() > 0).collect(Collectors.toList());
+        List<String> userIds = userList.stream().filter(ob -> ob.getSongAnalyzed() == null || !ob.getSongAnalyzed()).map(BaseModel::getId).collect(Collectors.toList());
+        while (userIds.size() > 0) {
 
-        while (userList.size() > 0) {
-            userList = userList.stream().filter(ob -> ob.getLoveSongId().size() > 0).collect(Collectors.toList());
-            List<String> userIds = userList.stream().filter(ob -> ob.getSongRecord() == null || !ob.getSongRecord()).map(ob -> ob.getId()).collect(Collectors.toList());
             for (String uid : userIds) {
                 Runnable runnable = new Runnable() {
                     @Override
@@ -67,6 +68,8 @@ public class SongRecordAnalyzer {
             pageIndex++;
             pageable = new PageRequest(pageIndex, pageSize);
             userList = userRepository.findAll(pageable).getContent();
+            userList = userList.stream().filter(ob -> ob.getLoveSongId().size() > 0).collect(Collectors.toList());
+            userIds = userList.stream().filter(ob -> ob.getSongAnalyzed() == null || !ob.getSongAnalyzed()).map(BaseModel::getId).collect(Collectors.toList());
         }
 
         System.out.println("======getSongRecordInfo over======");
