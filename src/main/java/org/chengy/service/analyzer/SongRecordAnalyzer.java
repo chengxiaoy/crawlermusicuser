@@ -43,22 +43,19 @@ public class SongRecordAnalyzer {
         Pageable pageable = new PageRequest(pageIndex, pageSize);
         List<Music163User> userList = userRepository.findAll(pageable).getContent();
         userList = userList.stream().filter(ob -> ob.getLoveSongId().size() > 0).collect(Collectors.toList());
-        List<String> userIds = userList.stream().filter(ob -> ob.getSongAnalyzed() == null || !ob.getSongAnalyzed()).map(BaseModel::getId).collect(Collectors.toList());
-        while (userIds.size() > 0) {
+        while (userList.size() > 0) {
 
-            for (String uid : userIds) {
+            for (Music163User user : userList) {
                 Runnable runnable = new Runnable() {
                     @Override
                     public void run() {
                         try {
-                            saveUserSongRecord(uid);
-                            System.out.println("save uid " + uid + " song record info success");
+                            saveUserSongRecord(user);
+                            System.out.println("save uid " + user.getId() + " song record info success");
                         } catch (Exception e) {
                             e.printStackTrace();
-                            System.out.println("save uid " + uid + " song record info failed");
-                            Music163User user =
-                                    userRepository.findById(uid).orElse(null);
-                            user.setSongRecord(false);
+                            System.out.println("save uid " + user.getId() + " song record info failed");
+                            user.setSongAnalyzed(false);
                             userRepository.save(user);
                         }
                     }
@@ -69,7 +66,6 @@ public class SongRecordAnalyzer {
             pageable = new PageRequest(pageIndex, pageSize);
             userList = userRepository.findAll(pageable).getContent();
             userList = userList.stream().filter(ob -> ob.getLoveSongId().size() > 0).collect(Collectors.toList());
-            userIds = userList.stream().filter(ob -> ob.getSongAnalyzed() == null || !ob.getSongAnalyzed()).map(BaseModel::getId).collect(Collectors.toList());
         }
 
         System.out.println("======getSongRecordInfo over======");
@@ -80,16 +76,14 @@ public class SongRecordAnalyzer {
     /**
      * 记录用户的歌曲信息
      *
-     * @param userid
+     * @param user
      * @throws Exception
      */
-    public void saveUserSongRecord(String userid) throws Exception {
+    public void saveUserSongRecord(Music163User user) throws Exception {
 
-        Music163User user = userRepository.findById(userid).orElse(null);
-        if (user.getSongRecord() != null) {
+        if (user.getSongAnalyzed() != null) {
             return;
         }
-
 
         List<Pair<String, Integer>> recordInfo = user.getSongScore();
 
@@ -97,20 +91,21 @@ public class SongRecordAnalyzer {
             Music163SongRecord songRecord =
                     songRecordRepository.findById(pair.getKey()).orElse(null);
             if (songRecord == null) {
-                Music163SongRecord newSongRecord = SongRecordFactory.buildMusic163SongRecord(pair.getKey(), Music163ApiCons.communityName, 1, (long) pair.getValue(), userid);
+                Music163SongRecord newSongRecord = SongRecordFactory
+                        .buildMusic163SongRecord(pair.getKey(), Music163ApiCons.communityName, 1, (long) pair.getValue(), user.getId());
                 songRecordRepository.save(newSongRecord);
             } else {
                 try {
                     songRecord.setScore(songRecord.getScore() + pair.getValue());
                     songRecord.setLoveNum(songRecord.getLoveNum() + 1);
-                    songRecord.getLoverIds().add(userid);
+                    songRecord.getLoverIds().add(user.getId());
                     songRecordRepository.save(songRecord);
                 } catch (OptimisticLockingFailureException e) {
                     System.out.println("retry update songRecord");
                     songRecord = songRecordRepository.findById(songRecord.getId()).orElse(null);
                     songRecord.setScore(songRecord.getScore() + pair.getValue());
                     songRecord.setLoveNum(songRecord.getLoveNum() + 1);
-                    songRecord.getLoverIds().add(userid);
+                    songRecord.getLoverIds().add(user.getId());
                     songRecordRepository.save(songRecord);
                 }
             }
