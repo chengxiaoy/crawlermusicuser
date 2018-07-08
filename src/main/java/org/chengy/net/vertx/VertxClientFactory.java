@@ -18,6 +18,14 @@ public class VertxClientFactory {
 	private Vertx vertx = Vertx.vertx();
 
 
+	public WebClient newWebClientWithProxy(String host,int port){
+		WebClientOptions webClientOptions = new WebClientOptions();
+		webClientOptions.setMaxPoolSize(10).setConnectTimeout(1000).setKeepAlive(true)
+				.setDefaultHost("music.163.com");
+		webClientOptions.setProxyOptions(new ProxyOptions().setHost(host).setPort(port));
+		return WebClient.create(vertx, webClientOptions);
+	}
+
 	public WebClient newWebClientWithProxy() {
 		Pair<String, Integer> pair = proxyIPPoolUtil.peekIp();
 		WebClientOptions webClientOptions = new WebClientOptions();

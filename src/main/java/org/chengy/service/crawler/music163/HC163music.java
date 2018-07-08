@@ -92,10 +92,6 @@ public class HC163music implements M163Crawler {
 
     public Music163Song getSongInfo(String songId) throws Exception {
 
-        Music163Song exitSong = songRepository.findById(songId).orElse(null);
-        if (exitSong != null) {
-            return null;
-        }
         String html =
                 HttpHelper.get(Music163ApiCons.songHostUrl + songId);
         String lyric = getLyric(songId);

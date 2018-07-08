@@ -49,6 +49,7 @@ public class Vertx163Muisc implements M163CrawlerAsync {
 
     private ThreadLocal<WebClient> clientThreadLocal = ThreadLocal.withInitial(() -> {
         return vertxClientFactory.newWebClient();
+       //return vertxClientFactory.newWebClientWithProxy();
     });
 
 

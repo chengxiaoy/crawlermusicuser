@@ -24,8 +24,8 @@ public class ExecutorConfiguration {
     @Bean("songExecutor")
     public ThreadPoolTaskExecutor crawlSongExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(7);
-        executor.setMaxPoolSize(7);
+        executor.setCorePoolSize(4);
+        executor.setMaxPoolSize(4);
         executor.setQueueCapacity(100);
         executor.setThreadNamePrefix("crawlsongthread--");
         //队列满的时候 生产者添加任务阻塞住

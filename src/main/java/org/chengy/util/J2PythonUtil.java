@@ -21,7 +21,7 @@ public class J2PythonUtil {
         try {
             objectMapper.configure(JsonParser.Feature.ALLOW_NON_NUMERIC_NUMBERS, true);
             String argsStr = objectMapper.writeValueAsString(args);
-            String url = "http://localhost:5000/recommend?args=";
+            String url = "http://116.62.226.241:5000/recommend?args=";
 
             String res = HttpHelper.get(url + URLEncoder.encode(argsStr, "utf-8"));
             Map<String, Object> map = objectMapper.readValue(res, new TypeReference<Map<String, Object>>() {

@@ -7,6 +7,7 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.chengy.net.hc.HttpHelper;
 import org.chengy.net.vertx.VertxClientFactory;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -61,7 +62,7 @@ public class ProxyIPPoolUtil {
                 try {
                     getAvailableIps();
                 } catch (Exception e) {
-                    System.out.println("get xici ipsets error");
+                    System.out.println("get proxy ipsets error");
                 }
 
             }
@@ -84,7 +85,7 @@ public class ProxyIPPoolUtil {
 
 
     public boolean getAvailableIps() throws ExecutionException, InterruptedException {
-        Set<Pair<String, Integer>> pairSet = getXiciProxyIps();
+        Set<Pair<String, Integer>> pairSet =   getKuaiDailiProxyIps();
         ipSet.addAll(pairSet);
         ipSet = validateProxyIp(ipSet, targetUrl);
         ipList.clear();
@@ -128,6 +129,34 @@ public class ProxyIPPoolUtil {
             });
         });
         return future.get();
+    }
+
+
+    /**
+     * kauidaili的代理ip
+     * @return
+     */
+    public Set<Pair<String,Integer>> getKuaiDailiProxyIps(){
+
+        Set<Pair<String, Integer>> pairSet = new ConcurrentHashSet<>(16);
+
+        String html = null;
+        try {
+            html = HttpHelper.get("https://www.kuaidaili.com/free/inha/1/");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        Document document = Jsoup.parse(html);
+        Elements elements=
+                document.select("#list > table > tbody > tr");
+        for (Element element:elements){
+            String  host=
+                    element.select("td:nth-child(1)").html();
+            String port=element.select("td:nth-child(2)").html();
+            pairSet.add(new ImmutablePair<>(host,Integer.parseInt(port)));
+        }
+        return pairSet;
     }
 
 

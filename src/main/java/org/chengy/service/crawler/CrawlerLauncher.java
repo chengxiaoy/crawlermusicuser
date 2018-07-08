@@ -70,17 +70,21 @@ public class CrawlerLauncher {
 		int pageId = 0;
 		int pageSize = 1000;
 		List<Music163User> music163UserList = userRepository.findAll(PageRequest.of(pageId++, pageSize)).getContent();
-		music163UserList = music163UserList.stream().filter(ob -> ob.getSongRecord() == null || !ob.getSongRecord()).collect(Collectors.toList());
 		while (music163UserList.size() > 0) {
-			for (Music163User user : music163UserList) {
+			music163UserList = music163UserList.stream().filter(ob -> ob.getSongRecord() == null || !ob.getSongRecord()).collect(Collectors.toList());
+ 			for (Music163User user : music163UserList) {
 				Runnable task = new Runnable() {
 					@Override
 					public void run() {
 						for (String songId : user.getLoveSongId()) {
+							if (filter.containsSongId(songId)){
+								continue;
+							}
 							try {
 								Music163Song music163Song = hc163music.getSongInfo(songId);
 								if (music163Song != null) {
 									songRepository.save(music163Song);
+									filter.putSongId(songId);
 								}
 							} catch (Exception e) {
 								LOGGER.error("craw song {} failed", songId, e);
@@ -94,15 +98,14 @@ public class CrawlerLauncher {
 
 			}
 			music163UserList = userRepository.findAll(PageRequest.of(pageId++, pageSize)).getContent();
-			music163UserList = music163UserList.stream().filter(ob -> ob.getSongRecord() == null || !ob.getSongRecord()).collect(Collectors.toList());
 		}
 	}
 
 
-	public void crawlM163User() throws InterruptedException {
+	public void crawlM163User() {
 
 		while (true) {
-			String uid = crawlerBizConfig.getCrawlerUid();
+ 			String uid = crawlerBizConfig.getCrawlerUid();
 			try {
 				boolean userExit = filter.containsUid(uid);
 				if (userExit && !crawlerBizConfig.needAdd()) {
@@ -132,7 +135,7 @@ public class CrawlerLauncher {
 								user.setSongScore(songInfo);
 								userRepository.save(user);
 								filter.putUid(uid);
-								LOGGER.info("craw " + uid + " succeed!");
+								LOGGER.info("craw user" + uid + " succeed!");
 							}
 						});
 
