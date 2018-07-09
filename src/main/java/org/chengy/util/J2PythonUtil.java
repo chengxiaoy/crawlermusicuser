@@ -4,15 +4,26 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.chengy.net.hc.HttpHelper;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import redis.clients.jedis.Jedis;
 
+import javax.annotation.PostConstruct;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URLEncoder;
+import java.util.List;
 import java.util.Map;
 
+@Component
 public class J2PythonUtil {
     static ObjectMapper objectMapper = new ObjectMapper();
+
+
+    private static String recommend_url;
+
+
 
 
     public static PythonRes callPythonRPC(String[] args)  {
@@ -21,9 +32,9 @@ public class J2PythonUtil {
         try {
             objectMapper.configure(JsonParser.Feature.ALLOW_NON_NUMERIC_NUMBERS, true);
             String argsStr = objectMapper.writeValueAsString(args);
-            String url = "http://116.62.226.241:5000/recommend?args=";
 
-            String res = HttpHelper.get(url + URLEncoder.encode(argsStr, "utf-8"));
+
+            String res = HttpHelper.get(recommend_url + URLEncoder.encode(argsStr, "utf-8"));
             Map<String, Object> map = objectMapper.readValue(res, new TypeReference<Map<String, Object>>() {
             });
             pythonRes.scoreMap = map;
@@ -68,6 +79,16 @@ public class J2PythonUtil {
             }
         }
         return pythonRes;
+    }
+
+
+    public static String getRecommend_url() {
+        return recommend_url;
+    }
+
+    @Value("${rec.url}")
+    public  void setRecommend_url(String recommend_url) {
+        J2PythonUtil.recommend_url = recommend_url;
     }
 
     public static class PythonRes {

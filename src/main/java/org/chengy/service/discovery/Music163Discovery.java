@@ -3,6 +3,7 @@ package org.chengy.service.discovery;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.chengy.model.BaseModel;
 import org.chengy.model.Music163Song;
@@ -14,11 +15,13 @@ import org.chengy.repository.remote.Music163UserRepository;
 import org.chengy.service.analyzer.SongRecordAnalyzer;
 import org.chengy.util.J2PythonUtil;
 import org.chengy.service.statistics.Music163Statistics;
+import org.chengy.util.RedisUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import redis.clients.jedis.Jedis;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -58,10 +61,8 @@ public class Music163Discovery {
 	 */
 	public List<Music163Song> getRecommendSongs(String uid, int n, int k) {
 
-		List<Music163User> userList = getRandomUsers(n);
-		List<String> uidList =
-				userList.stream().filter(ob -> ob.getSongScore().size() > 0).map(BaseModel::getId).collect(Collectors.toList());
-		String randomUserIds = String.join(",", uidList);
+		Collection<String> userList = getRandomUsers(n);
+		String randomUserIds = String.join(",", userList);
 
 
 		String filePath = pythonFile;
@@ -120,10 +121,8 @@ public class Music163Discovery {
 
 
 	private List<Music163Song> contentBasedRecommend(String uid, int n, int k, String type) {
-		List<Music163User> userList = getRandomUsers(n);
-		Set<String> idSet = userList.stream().filter(ob -> ob.getSongScore().size() > 0)
-				.map(BaseModel::getId).collect(Collectors.toSet());
-		String candidate_id_str = String.join(",", idSet);
+		Collection<String> userList = getRandomUsers(n);
+		String candidate_id_str = String.join(",", userList);
 		String argv2 = uid;
 		String argv3 = candidate_id_str;
 		String filePath = pythonFile;
@@ -155,31 +154,12 @@ public class Music163Discovery {
 	 * @param n
 	 * @return
 	 */
-	private List<Music163User> getRandomUsers(int n) {
-		List<Music163User> res = new ArrayList<>();
-		long count = userRepository.count();
-		int pageCount = (int) count / 50;
-		Set<Integer> pageIdSet = new HashSet<>();
-		int times = n / 50;
-		for (int i = 1; i <= times; i++) {
-			Random random = new Random();
-			int pageId = random.nextInt(pageCount);
-			while (!pageIdSet.add(pageId)) {
-				pageId = random.nextInt(pageCount);
-			}
-			res.addAll(userRepository.findAll(new PageRequest(pageId, 50)).getContent());
+	private Collection<String> getRandomUsers(int n) {
+		List<String> uids = new ArrayList<>();
+		try (Jedis jedis = RedisUtil.getJedis()) {
+			uids = jedis.srandmember("user_id", n);
 		}
-		int remainder = n % 50;
-		if (remainder == 0) {
-            return res;
-		}
-		Random random = new Random();
-		int pageId = random.nextInt(pageCount);
-		while (!pageIdSet.add(pageId)) {
-			pageId = random.nextInt(pageCount);
-		}
-		res.addAll(userRepository.findAll(new PageRequest(pageId, remainder)).getContent());
-		return res;
+		return uids;
 	}
 
 
@@ -221,7 +201,7 @@ public class Music163Discovery {
 		if (!useAverageScore) {
 			argv4 = String.valueOf(k);
 		}
- 		String filePath = pythonFile;
+		String filePath = pythonFile;
 		String[] argvs = new String[]{"python", filePath, argv1, argv2, argv3, argv4};
 		J2PythonUtil.PythonRes pythonRes = J2PythonUtil.callPythonRPC(argvs);
 		if (pythonRes.getCode() == 0) {

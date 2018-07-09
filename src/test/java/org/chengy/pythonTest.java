@@ -117,7 +117,7 @@ public class pythonTest {
 
 	@Test
 	public void getUserBasedRecommendTest() {
-		String uid = "476915651";
+		String uid = "330313";
 		System.out.println(env);
 		List<Music163Song> songList = music163Discovery.userBasedRecommend(uid, 100, 20);
 		System.out.println("====== user recommend======" + songList);
