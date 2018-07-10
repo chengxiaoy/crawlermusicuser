@@ -123,7 +123,7 @@ public class pythonTest {
 		System.out.println("====== user recommend======" + songList);
 		songList = music163Discovery.itemBasedRecommend(uid, 100, 20);
 		System.out.println("====== item recommend======" + songList);
-		songList = music163Discovery.getRecommendSongs(uid, 100, 20);
+		songList = music163Discovery.getRecommendSongs(uid, 200, 20);
 		System.out.println("====== model recommend======" + songList);
 
 	}

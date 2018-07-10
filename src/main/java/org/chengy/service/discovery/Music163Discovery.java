@@ -2,6 +2,7 @@ package org.chengy.service.discovery;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -68,13 +70,14 @@ public class Music163Discovery {
 		String filePath = pythonFile;
 		String[] argvs = new String[]{"python", filePath, "model_recommend", uid, randomUserIds, String.valueOf(k)};
 
-		String s = null;
-
 		List<String> recommendSongIds;
 		J2PythonUtil.PythonRes pythonRes = J2PythonUtil.callPythonRPC(argvs);
 		if (pythonRes.getCode() == 0) {
 			recommendSongIds = filterSongs(pythonRes.getScoreMap().keySet(), uid);
-			return Lists.newArrayList(songRepository.findAllById(recommendSongIds));
+			Stopwatch stopwatch = Stopwatch.createStarted();
+			List<Music163Song> music163SongList = Lists.newArrayList(songRepository.findAllById(recommendSongIds));
+			System.out.println("repository get duration is " + stopwatch.elapsed(TimeUnit.SECONDS) + "s");
+			return music163SongList;
 		} else {
 			throw new RuntimeException("call python exception");
 		}
@@ -141,7 +144,19 @@ public class Music163Discovery {
 					songScore.entrySet().stream().filter(ob -> !String.valueOf(ob.getValue()).equals("NaN")).sorted(Collections.reverseOrder(Comparator.comparingDouble(x -> (double) (x.getValue()))))
 							.limit(k).map(ob -> ob.getKey()).collect(Collectors.toSet());
 			List<String> songIds = filterSongs(topSongIds, uid);
-			return Lists.newArrayList(songRepository.findAllById(songIds));
+			int i = 1;
+			Stopwatch stopwatch = Stopwatch.createStarted();
+
+			while (songIds.size() <= 2) {
+				topSongIds = songScore.entrySet().stream().filter(ob -> !String.valueOf(ob.getValue()).equals("NaN")).sorted(Collections.reverseOrder(Comparator.comparingDouble(x -> (double) (x.getValue()))))
+						.skip(k * i++).limit(k).map(ob -> ob.getKey()).collect(Collectors.toSet());
+				songIds.addAll(filterSongs(topSongIds, uid));
+			}
+
+			List<Music163Song> music163SongList = Lists.newArrayList(songRepository.findAllById(songIds));
+			System.out.println("repository get duration is " + stopwatch.elapsed(TimeUnit.SECONDS) + "s");
+			return music163SongList;
+
 		}
 		return null;
 	}
@@ -211,7 +226,6 @@ public class Music163Discovery {
 			}
 			Map<String, Double> songScoreMap = songRecordAnalyzer.getSongAverageScore(pythonRes.getScoreMap().keySet());
 			Comparator<Music163Song> comparator = (s1, s2) -> ComparisonChain.start().compare(songScoreMap.get(s1.getId()), songScoreMap.get(s2.getId())).result();
-
 			return songList.stream().sorted(comparator.reversed()).limit(k).collect(Collectors.toList());
 
 		}

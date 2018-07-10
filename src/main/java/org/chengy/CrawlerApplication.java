@@ -27,13 +27,13 @@ public class CrawlerApplication implements CommandLineRunner {
 
 	public void run(String... var1) throws Exception {
 //		bizConfig.specifyCrawlerUser(Arrays.asList("330313", "252839335", "625356566", "250038717"));
-//		new Thread(new Runnable() {
-//			@Override
-//			public void run() {
-//					launcher.crawlM163User();
-//
-//			}
-//		}).start();
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+					launcher.crawlM163User();
+
+			}
+		}).start();
 ////
 //		new Thread(new Runnable() {
 //			@Override
@@ -43,7 +43,7 @@ public class CrawlerApplication implements CommandLineRunner {
 //			}
 //		}).start();
 
-	//	songRecordAnalyzer.getSongRecordInfo();
+		songRecordAnalyzer.getSongRecordInfo();
 	}
 
 }
