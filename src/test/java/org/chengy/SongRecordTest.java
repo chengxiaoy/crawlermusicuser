@@ -85,9 +85,5 @@ public class SongRecordTest {
 	}
 
 
-	@Test
-	public void getSongRecord() {
-		songRecordAnalyzer.getSongRecordInfo();
-	}
 
 }

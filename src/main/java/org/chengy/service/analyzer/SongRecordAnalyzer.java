@@ -9,6 +9,7 @@ import org.chengy.model.Music163SongRecord;
 import org.chengy.model.Music163User;
 import org.chengy.repository.remote.Music163SongRecordRepository;
 import org.chengy.repository.remote.Music163UserRepository;
+import org.chengy.util.RedisUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -16,12 +17,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
+import redis.clients.jedis.Jedis;
 
 import java.math.BigDecimal;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -37,40 +36,38 @@ public class SongRecordAnalyzer {
 	@Qualifier("songExecutor")
 	ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
-	public void getSongRecordInfo() {
-		int pageIndex = 0;
-		int pageSize = 100;
-		Pageable pageable = new PageRequest(pageIndex, pageSize);
-		List<Music163User> userList = userRepository.findAll(pageable).getContent();
-		userList = userList.stream().filter(ob -> ob.getLoveSongId().size() > 0).collect(Collectors.toList());
-		while (userList.size() > 0) {
 
-			userList =
-					userList.stream().filter(OB -> OB.getSongAnalyzed() == null).collect(Collectors.toList());
-			for (Music163User user : userList) {
-				Runnable runnable = new Runnable() {
-					@Override
-					public void run() {
-						try {
-							saveUserSongRecord(user);
-							System.out.println("save uid " + user.getId() + " song record info success");
-						} catch (Exception e) {
-							e.printStackTrace();
-							System.out.println("save uid " + user.getId() + " song record info failed");
-							user.setSongAnalyzed(false);
-							userRepository.save(user);
-						}
+	public void saveSongRecordInfo() {
+		Set<String> ids = new HashSet<>();
+		try (Jedis jedis = RedisUtil.getJedis()) {
+			ids = jedis.smembers("user_id");
+			List<String> analyzedUids = new ArrayList<>();
+
+			for (String uid : ids) {
+				if (!jedis.sismember("u_record", uid)) {
+					analyzedUids.add(uid);
+				}
+				if (analyzedUids.size() == 100) {
+					List<Music163User> music163UserList = Lists.newArrayList(userRepository.findAllById(analyzedUids));
+					for (Music163User user : music163UserList) {
+						Runnable runnable = new Runnable() {
+							@Override
+							public void run() {
+								try {
+									saveUserSongRecord(user);
+								} catch (Exception e) {
+									e.printStackTrace();
+								}
+								jedis.sadd("u_record", uid);
+							}
+						};
+						threadPoolTaskExecutor.execute(runnable);
 					}
-				};
-				threadPoolTaskExecutor.execute(runnable);
+					analyzedUids.clear();
+				}
 			}
-			pageIndex++;
-			pageable = new PageRequest(pageIndex, pageSize);
-			userList = userRepository.findAll(pageable).getContent();
-			userList = userList.stream().filter(ob -> ob.getLoveSongId().size() > 0).collect(Collectors.toList());
 		}
 
-		System.out.println("======getSongRecordInfo over======");
 
 	}
 
@@ -83,7 +80,7 @@ public class SongRecordAnalyzer {
 	 */
 	public void saveUserSongRecord(Music163User user) throws Exception {
 
-		if (user.getSongAnalyzed() != null) {
+		if (user == null) {
 			return;
 		}
 
@@ -98,6 +95,10 @@ public class SongRecordAnalyzer {
 				songRecordRepository.save(newSongRecord);
 			} else {
 				try {
+					if (songRecord.getLoverIds().contains(user.getId())) {
+						continue;
+					}
+
 					songRecord.setScore(songRecord.getScore() + pair.getValue());
 					songRecord.setLoveNum(songRecord.getLoveNum() + 1);
 					songRecord.getLoverIds().add(user.getId());
@@ -112,9 +113,6 @@ public class SongRecordAnalyzer {
 				}
 			}
 		}
-
-		user.setSongRecord(true);
-		userRepository.save(user);
 	}
 
 

@@ -33,7 +33,7 @@ public class M163Parser {
 	@Autowired
 	ObjectMapper objectMapper;
 
-	public Music163User parseUser(String html, String id) {
+	public Music163User parseUser(String html, String id)  {
 		try {
 			Document document = Jsoup.parse(html);
 			// 听歌总数
@@ -68,22 +68,27 @@ public class M163Parser {
 				age = new Date(Long.parseLong(ageinfo.get(0).attr("data-age")));
 			}
 
+			String area = null;
 			//地区的代码逻辑
-			Elements elements = document.select("#head-box > dd > div:nth-child(4) > span:nth-child(1)");
-			String area = "";
-			if (elements.size() > 0) {
-				try {
-					area = elements.get(0).html().split("：")[1];
-				} catch (Exception e) {
-					elements = document.select("#head-box > dd > div:nth-child(3) > span:nth-child(1)");
-					area = elements.get(0).html().split("：")[1];
-				}
-			} else {
-				elements = document.select("#head-box > dd > div.inf.s-fc3 > span");
+			try {
+				Elements elements = document.select("#head-box > dd > div:nth-child(4) > span:nth-child(1)");
 				if (elements.size() > 0) {
-					area = elements.get(0).html().split("：")[1];
+					try {
+						area = elements.get(0).html().split("：")[1];
+					} catch (Exception e) {
+						elements = document.select("#head-box > dd > div:nth-child(3) > span:nth-child(1)");
+						area = elements.get(0).html().split("：")[1];
+					}
+				} else {
+					elements = document.select("#head-box > dd > div.inf.s-fc3 > span");
+					if (elements.size() > 0) {
+						area = elements.get(0).html().split("：")[1];
+					}
 				}
+			} catch (Exception e) {
+				LOGGER.warn("get area of user {} failed!", id);
 			}
+
 			String avatar = document.select("#ava > img").attr("src");
 			Music163User user = UserFactory.buildMusic163User(age, area, name, avatar, id, signature, gender, songNums);
 			return user;

@@ -72,12 +72,20 @@ public class CrawlerLauncher {
 		List<Music163User> music163UserList = userRepository.findAll(PageRequest.of(pageId++, pageSize)).getContent();
 		while (music163UserList.size() > 0) {
 			music163UserList = music163UserList.stream().filter(ob -> ob.getSongRecord() == null || !ob.getSongRecord()).collect(Collectors.toList());
- 			for (Music163User user : music163UserList) {
+			for (Music163User user : music163UserList) {
+
+				if (!crawlerBizConfig.isCrawlSongSwitch()) {
+					try {
+						Thread.sleep(1000 * 10);
+					} catch (InterruptedException e) {
+						LOGGER.warn("thread has been interrupted!");
+					}
+				}
 				Runnable task = new Runnable() {
 					@Override
 					public void run() {
 						for (String songId : user.getLoveSongId()) {
-							if (filter.containsSongId(songId)){
+							if (filter.containsSongId(songId)) {
 								continue;
 							}
 							try {
@@ -105,11 +113,15 @@ public class CrawlerLauncher {
 	public void crawlM163User() {
 
 		while (true) {
- 			String uid = crawlerBizConfig.getCrawlerUid();
+			String uid = crawlerBizConfig.getCrawlerUid();
 			try {
 				boolean userExit = filter.containsUid(uid);
 				if (userExit && !crawlerBizConfig.needAdd()) {
 					continue;
+				}
+
+				if (!crawlerBizConfig.isCrawlUserSwitch()) {
+					Thread.sleep(1000 * 10);
 				}
 
 				Runnable crawlerUserInfoTask = new Runnable() {
@@ -138,7 +150,6 @@ public class CrawlerLauncher {
 								LOGGER.info("craw user" + uid + " succeed!");
 							}
 						});
-
 					}
 				};
 				userExecutor.execute(crawlerUserInfoTask);
