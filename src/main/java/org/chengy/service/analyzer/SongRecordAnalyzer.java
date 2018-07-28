@@ -10,6 +10,8 @@ import org.chengy.model.Music163User;
 import org.chengy.repository.remote.Music163SongRecordRepository;
 import org.chengy.repository.remote.Music163UserRepository;
 import org.chengy.util.RedisUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -27,6 +29,9 @@ import java.util.stream.Collectors;
 @Component
 public class SongRecordAnalyzer {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(SongRecordAnalyzer.class);
+
+
 	@Autowired
 	Music163UserRepository userRepository;
 	@Autowired
@@ -38,33 +43,27 @@ public class SongRecordAnalyzer {
 
 
 	public void saveSongRecordInfo() {
-		Set<String> ids = new HashSet<>();
-		try (Jedis jedis = RedisUtil.getJedis()) {
-			ids = jedis.smembers("user_id");
-			List<String> analyzedUids = new ArrayList<>();
+		Set<String> ids = RedisUtil.smembers("user_id");
 
-			for (String uid : ids) {
-				if (!jedis.sismember("u_record", uid)) {
-					analyzedUids.add(uid);
-				}
-				if (analyzedUids.size() == 100) {
-					List<Music163User> music163UserList = Lists.newArrayList(userRepository.findAllById(analyzedUids));
-					for (Music163User user : music163UserList) {
-						Runnable runnable = new Runnable() {
-							@Override
-							public void run() {
-								try {
-									saveUserSongRecord(user);
-								} catch (Exception e) {
-									e.printStackTrace();
-								}
-								jedis.sadd("u_record", uid);
-							}
-						};
-						threadPoolTaskExecutor.execute(runnable);
+		for (String uid : ids) {
+			if (!RedisUtil.sismember("u_record", uid)) {
+
+				Music163User user = userRepository.findById(uid).orElse(null);
+
+				Runnable runnable = new Runnable() {
+					@Override
+					public void run() {
+						try {
+							saveUserSongRecord(user);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+						RedisUtil.sadd("u_record", uid);
+						LOGGER.info("song info of {} record success", uid);
 					}
-					analyzedUids.clear();
-				}
+				};
+				threadPoolTaskExecutor.execute(runnable);
+
 			}
 		}
 

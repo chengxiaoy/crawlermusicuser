@@ -42,15 +42,15 @@ public class CrawlerApplication implements CommandLineRunner {
 
 			}
 		}).start();
-
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				launcher.crawlM163Songs();
-
-			}
-		}).start();
-
+//
+//		new Thread(new Runnable() {
+//			@Override
+//			public void run() {
+//				launcher.crawlM163Songs();
+//
+//			}
+//		}).start();F
+//
 		songRecordAnalyzer.saveSongRecordInfo();
 
 	}
