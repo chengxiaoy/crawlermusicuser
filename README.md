@@ -1,17 +1,24 @@
-# crawlermusicuser
+# music_recommend
 
-spring boot+mongodb  
-爬取网易云音乐的用户信息和歌曲信息  
-网易云音乐webapi 的请求参数都使用了aes和ras的加密  
-参数通过chrome调试得到
+_本工程依赖redis和mongo_   
+1. **爬虫部分**[获取原始数据]   
+爬取音乐网站的用户信息和歌曲信息   
+网易云音乐webapi 的请求参数都使用了aes和ras的加密    
+参数格式通过chrome调试得到，使用vertx+CompletableFuture 异步爬取
+2. 推荐部分尝试的推荐算法   
+协同过滤   
+矩阵分解   
+使用librosa 对音频做短时傅立叶变换转换成
+
+
 
 
 # 九月15号
 1. 根据用户id获取用户基本信息
 2. 根据用户id获取粉丝和关注人id
 3. 获取用户喜欢的歌曲（变化的数据）
-4. 对于获取的id数据如何去重？_**Bloom Filter redis**_
-5. 遍历用户广度优先？
+4. 对获取的各类id数据去重 _**Bloom Filter / Redis**_
+5. 遍历用户广度优先
 
 # 九月30号
 1. 爬取了20w用户以及用户播放次数最多的前一百首歌曲的信息

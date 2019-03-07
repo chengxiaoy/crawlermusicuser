@@ -17,4 +17,11 @@ public class HashTest {
         HashCode hashCode = adler32.hashBytes(new byte[4]);
 
     }
+
+	public static void main(String[] args) {
+
+		Thread.currentThread().interrupt();
+
+		System.out.println("interrupt");
+	}
 }

@@ -53,6 +53,7 @@ public class CrawlerApplication implements CommandLineRunner {
 //
 		songRecordAnalyzer.saveSongRecordInfo();
 
+
 	}
 
 	public void crawlConfig() {
