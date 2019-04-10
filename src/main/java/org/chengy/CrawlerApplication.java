@@ -35,13 +35,13 @@ public class CrawlerApplication implements CommandLineRunner {
 	public void run(String... var1) throws Exception {
 		crawlConfig();
 
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				launcher.crawlM163User();
-
-			}
-		}).start();
+//		new Thread(new Runnable() {
+//			@Override
+//			public void run() {
+//				launcher.crawlM163User();
+//
+//			}
+//		}).start();
 //
 //		new Thread(new Runnable() {
 //			@Override
@@ -51,7 +51,7 @@ public class CrawlerApplication implements CommandLineRunner {
 //			}
 //		}).start();F
 //
-		songRecordAnalyzer.saveSongRecordInfo();
+//		songRecordAnalyzer.saveSongRecordInfo();
 
 
 	}

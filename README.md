@@ -6,9 +6,9 @@ _本工程依赖redis和mongo_
 网易云音乐webapi 的请求参数都使用了aes和ras的加密    
 参数格式通过chrome调试得到，使用vertx+CompletableFuture 异步爬取
 2. **推荐部分**[尝试的推荐算法]   
-协同过滤   
-矩阵分解   
-使用librosa 对音频做短时傅立叶变换转换成频谱图 使用CNN网络fine-tune后寻找相似图片
+协同过滤(CF)   
+矩阵分解(Matrix Factorization)   
+深度学习(使用librosa 对音频做短时傅立叶变换转换成频谱图 使用CNN网络fine-tune后寻找相似图片)
 
 
 
